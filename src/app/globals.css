@@ -1,26 +1,520 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   SNABBTRYCK — Design system
+   CMYK-on-black · gult är primär accent · chevron ›› framåt.
+   Legacy token names kept and repointed to brand values so
+   every page cascades. Yellow = CTA fill (black text); cyan =
+   secondary/detail accent; magenta = process graphics only.
+   ============================================================ */
+
+@theme {
+  /* Core ink / dark surfaces */
+  --color-ink: #111114;
+  --color-ink-2: #17171b;
+  --color-ink-line: #24242a;
+
+  /* Paper / light surfaces */
+  --color-paper: #faf9f5;
+  --color-paper-2: #f3f1ea;
+  --color-paper-3: #e9e7df;
+  --color-surface: #ffffff;
+
+  /* Brand accents (CMYK family) */
+  --color-yellow: #ffda00; /* PRIMARY accent + CTA fill (text on it = ink) */
+  --color-yellow-ink: #111114;
+  --color-cyan: #00aeef; /* SECONDARY accent — links, details, active dots */
+  --color-magenta: #ec008c; /* TERTIARY — process graphics only */
+
+  /* `signal` = the site-wide detail accent → cyan, so every legacy
+     text-signal / bg-signal stays readable and on-brand. Primary
+     CTAs are yellow via the explicit .btn-primary rule below. */
+  --color-signal: #00aeef;
+  --color-signal-ink: #0090c9;
+
+  /* Neutrals / borders / muted text */
+  --color-line: #e9e7df;
+  --color-line-2: #dcdacf;
+  --color-muted: #8b897f;
+  --color-muted-2: #a6a39a;
+  --color-ink-soft: #57564f; /* secondary body text on light */
+
+  /* Text-on-dark */
+  --color-on-dark-2: #c9c9c2;
+  --color-on-dark-3: #8b8b93;
+  --color-on-dark-faint: #5f5f66;
+
+  /* Registration / process hints */
+  --color-reg-cyan: #00aeef;
+  --color-reg-magenta: #ec008c;
+
+  /* Semantic (quality / feedback) */
+  --color-good: #1f8a5b;
+  --color-warn: #e8a33d;
+  --color-bad: #e5484d;
+
+  /* Fonts (wired to next/font variables in layout.tsx) */
+  --font-display: var(--font-anton), "Arial Narrow", sans-serif;
+  --font-head: var(--font-archivo), system-ui, sans-serif;
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+
+  /* Radius — brand is soft: pill buttons, rounded cards */
+  --radius: 14px;
+  --radius-pill: 100px;
+  --radius-lg: 18px;
+  --radius-sm: 10px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* --------------------------------------------------------- Base */
+* {
+  border-color: var(--color-line);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-yellow);
+  color: var(--color-yellow-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------- Type roles */
+.font-display {
+  font-family: var(--font-display);
+}
+.font-head {
+  font-family: var(--font-head);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Big display headers — Archivo Black (heaviest brand face), tight & thick.
+   Anton stays reserved for the logo wordmark + numeric displays (.font-display). */
+.display {
+  font-family: var(--font-head);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.94;
+}
+
+/* Section headings — Archivo Black, tight, mixed case */
+.head {
+  font-family: var(--font-head);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.0;
+}
+
+/* Yellow marker highlight — for a word inside a display heading.
+   em-scaled so it tracks the font size; tiny tilt reads as a press-stamp. */
+.mark-yellow {
+  display: inline-block;
+  background: var(--color-yellow);
+  color: var(--color-yellow-ink);
+  padding: 0.1em 0.26em 0.04em;
+  margin-top: 0.12em;
+  line-height: 1;
+  transform: rotate(-1.4deg);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Technical eyebrow / spec label — Space Mono, tracked out */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.spec {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------- Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1;
+  padding: 0.75rem 1.35rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease, background 0.15s ease,
+    color 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+.btn:active {
+  transform: translateY(0);
+}
+.btn:disabled {
+  background: #ebe9e2;
+  color: #b0ada3;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+}
+
+/* Primary CTA — yellow fill, ink text (the one brand fill) */
+.btn-primary {
+  background: var(--color-yellow);
+  color: var(--color-yellow-ink);
+}
+
+/* Secondary — cyan fill, white text */
+.btn-secondary {
+  background: var(--color-cyan);
+  color: #fff;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+.btn-outline:not(:disabled):hover {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  filter: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-ink);
+  border-color: var(--color-line-2);
+}
+.btn-ghost:not(:disabled):hover {
+  border-color: var(--color-ink);
+  filter: none;
+}
+
+.btn-sm {
+  padding: 0.55rem 1rem;
+  font-size: 0.75rem;
+}
+
+.on-ink .btn-outline {
+  color: var(--color-paper);
+  border-color: var(--color-paper);
+}
+.on-ink .btn-outline:not(:disabled):hover {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* --------------------------------------------------------- Print motifs */
+
+/* Registration mark ⊕ — recurring identity token */
+.reg-mark {
+  position: relative;
+  width: 1em;
+  height: 1em;
+  flex: none;
+  display: inline-block;
+}
+.reg-mark::before,
+.reg-mark::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+.reg-mark::before {
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+.reg-mark::after {
+  top: 50%;
+  left: 0;
+  height: 1px;
+  width: 100%;
+  transform: translateY(-50%);
+}
+.reg-ring {
+  position: absolute;
+  inset: 18%;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+/* Crop-mark frame corners on panels/cards */
+.crop-frame {
+  position: relative;
+}
+.crop-frame::before,
+.crop-frame::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  z-index: 1;
+}
+.crop-frame::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1.5px solid var(--color-ink);
+  border-left: 1.5px solid var(--color-ink);
+}
+.crop-frame::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1.5px solid var(--color-ink);
+  border-right: 1.5px solid var(--color-ink);
+}
+
+/* Halftone raster field */
+.halftone {
+  background-image: radial-gradient(
+    var(--color-ink) 1.1px,
+    transparent 1.2px
+  );
+  background-size: 9px 9px;
+}
+.halftone-signal {
+  background-image: radial-gradient(
+    var(--color-signal) 1.4px,
+    transparent 1.5px
+  );
+  background-size: 10px 10px;
+}
+.halftone-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
+}
+
+/* Ruler tick strip */
+.ruler {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--color-line) 0,
+    var(--color-line) 1px,
+    transparent 1px,
+    transparent 10px
+  );
+}
+
+/* Blueprint / graph field */
+.grid-field {
+  background-image: linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.grid-field-ink {
+  background-image: linear-gradient(var(--color-ink-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-ink-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Hairline divider with tick */
+.rule-tick {
+  border-top: 1px solid var(--color-line);
+}
+
+/* --------------------------------------------------------- Surfaces */
+.card {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+}
+.panel-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Marquee */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  display: inline-flex;
+  animation: marquee 26s linear infinite;
+  white-space: nowrap;
+}
+
+/* Price tick animation */
+@keyframes price-pop {
+  0% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.price-pop {
+  animation: price-pop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes flash-signal {
+  0% {
+    color: var(--color-signal);
+  }
+  100% {
+    color: inherit;
+  }
+}
+.flash-signal {
+  animation: flash-signal 0.6s ease-out;
+}
+
+/* Reveal on load */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Toast */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-in {
+  animation: toast-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Bottom sheet */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.sheet-up {
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Scrollbar (editor panels) */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 4px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Range slider in brand style */
+input[type="range"].brand {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--color-line);
+  border-radius: 2px;
+  outline: none;
+}
+input[type="range"].brand::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--color-ink);
+  cursor: pointer;
+}
+input[type="range"].brand::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+
+/* Field */
+.field {
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid var(--color-line-2);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  transition: border-color 0.15s ease;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+}
+.field::placeholder {
+  color: var(--color-muted-2);
+}
+
+.link-underline {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--color-signal);
 }

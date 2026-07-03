@@ -1,0 +1,340 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { PageShell } from "@/components/layout/PageShell";
+import { DesignThumb } from "@/components/ui/DesignThumb";
+import { StepIndicator } from "@/components/ui/StepIndicator";
+import { ChevronMark } from "@/components/ui/ChevronMark";
+import { useToast } from "@/components/ui/Toast";
+import {
+  Cart,
+  CartAddon,
+  getCart,
+  setCart as persistCart,
+  clearCart,
+  createOrder,
+} from "@/lib/account";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { GARMENTS, getGarment } from "@/lib/garments";
+import { computePrice } from "@/lib/pricing";
+import { computePrintArea, uid } from "@/lib/store";
+import { kr } from "@/lib/format";
+
+type Pay = "kort" | "swish" | "faktura";
+
+export default function Kassa() {
+  const router = useRouter();
+  const { push } = useToast();
+  const [cart, setCartState] = useState<Cart | null>(null);
+  const [addons, setAddons] = useState<CartAddon[]>([]);
+  const [ready, setReady] = useState(false);
+  const [step, setStep] = useState(0); // 0 leverans, 1 betalning
+  const { profile } = useAuth();
+  const business = profile?.business ?? false;
+  const [pay, setPay] = useState<Pay>("swish");
+  const [placing, setPlacing] = useState(false);
+
+  useEffect(() => {
+    const c = getCart();
+    setCartState(c);
+    setAddons(c?.addons ?? []);
+    setReady(true);
+  }, []);
+
+  function updateAddons(next: CartAddon[]) {
+    setAddons(next);
+    if (cart) persistCart({ ...cart, addons: next });
+  }
+
+  if (!ready) return <PageShell><div className="p-16" /></PageShell>;
+
+  if (!cart) {
+    return (
+      <PageShell>
+        <div className="mx-auto max-w-md px-4 py-24 text-center">
+          <div className="flex justify-center">
+            <ChevronMark size={28} color="#FFDA00" />
+          </div>
+          <h1 className="display mt-4 text-3xl">Varukorgen är tom</h1>
+          <p className="mt-3 text-ink-soft">Designa något först, så dyker det upp här.</p>
+          <Link href="/designa" className="btn btn-primary mt-6">Till verktyget</Link>
+        </div>
+      </PageShell>
+    );
+  }
+
+  const g = getGarment(cart.design.garmentId);
+  const price = computePrice(g, computePrintArea(cart.design.elements, g), cart.qty);
+
+  const addonRows = addons.map((a) => {
+    const ag = getGarment(a.garmentId);
+    const ap = computePrice(ag, computePrintArea(cart.design.elements, ag), a.qty);
+    return { a, ag, ap };
+  });
+  const pick = (p: { subtotalInclVat: number; subtotalExclVat: number }) =>
+    business ? p.subtotalExclVat : p.subtotalInclVat;
+  const itemsSum = pick(price) + addonRows.reduce((s, r) => s + pick(r.ap), 0);
+  const inclVatSum =
+    price.subtotalInclVat + addonRows.reduce((s, r) => s + r.ap.subtotalInclVat, 0);
+  const vatSum = price.vat + addonRows.reduce((s, r) => s + r.ap.vat, 0);
+  const shipping = inclVatSum >= 800 ? 0 : 59;
+  const grand = itemsSum + shipping;
+
+  function placeOrder() {
+    if (!cart) return;
+    setPlacing(true);
+    const order = createOrder({
+      total: Math.round(grand),
+      design: cart.design,
+      business,
+      lines: [
+        {
+          garmentId: cart.design.garmentId,
+          colorIndex: cart.design.colorIndex,
+          size: cart.design.size,
+          qty: cart.qty,
+        },
+        ...addons.map((a) => ({
+          garmentId: a.garmentId,
+          colorIndex: a.colorIndex,
+          size: a.size,
+          qty: a.qty,
+        })),
+      ],
+    });
+    clearCart();
+    push({ kind: "success", title: "Order lagd!", msg: order.ref });
+    router.push(`/order/${order.id}`);
+  }
+
+  return (
+    <PageShell>
+      <div className="mx-auto max-w-[1100px] px-4 py-10 md:px-8">
+        <div className="mb-8 max-w-2xl">
+          <StepIndicator
+            steps={["Design", "Leverans", "Betalning", "Klart"]}
+            current={step + 1}
+          />
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+          {/* form */}
+          <div>
+            {step === 0 ? (
+              <section className="space-y-5">
+                <h2 className="head text-2xl">Leverans</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Förnamn" />
+                  <Field label="Efternamn" />
+                  <Field label="E-post" type="email" full />
+                  <Field label="Adress" full />
+                  <Field label="Postnummer" />
+                  <Field label="Ort" />
+                  {business && <Field label="Företag / org.nr" full />}
+                </div>
+                <div>
+                  <h3 className="eyebrow mb-2">Leveranssätt</h3>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Radio name="ship" label="Postombud" note="2–4 dagar · 59 kr" defaultChecked />
+                    <Radio name="ship" label="Hemleverans" note="1–3 dagar · 79 kr" />
+                  </div>
+                </div>
+                <button onClick={() => setStep(1)} className="btn btn-primary">Till betalning →</button>
+              </section>
+            ) : (
+              <section className="space-y-5">
+                <button onClick={() => setStep(0)} className="spec text-muted hover:text-ink">← Tillbaka till leverans</button>
+                <h2 className="head text-2xl">Betalning</h2>
+                <div className="space-y-2">
+                  {(business ? (["faktura", "kort", "swish"] as Pay[]) : (["swish", "kort"] as Pay[])).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPay(p)}
+                      className={`flex w-full items-center gap-3 rounded-[10px] border p-4 text-left transition-colors ${
+                        pay === p ? "border-yellow bg-yellow/10" : "border-line hover:border-line-2"
+                      }`}
+                    >
+                      <span className={`h-4 w-4 flex-none rounded-full border-2 ${pay === p ? "border-yellow bg-yellow" : "border-line-2"}`} />
+                      <span className="head text-sm">
+                        {p === "kort" ? "Kort" : p === "swish" ? "Swish" : "Faktura (30 dagar)"}
+                      </span>
+                      {p === "faktura" && <span className="spec ml-auto text-[10px] text-cyan">Endast företag</span>}
+                    </button>
+                  ))}
+                </div>
+
+                {pay === "kort" && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Kortnummer" full placeholder="4242 4242 4242 4242" />
+                    <Field label="Giltigt t.o.m." placeholder="MM/ÅÅ" />
+                    <Field label="CVC" placeholder="123" />
+                  </div>
+                )}
+                {pay === "swish" && (
+                  <div className="card p-4 text-center">
+                    <div className="mx-auto h-28 w-28 grid-field-ink bg-ink" />
+                    <p className="spec mt-2 text-[11px] text-muted">Skanna med Swish-appen (demo)</p>
+                  </div>
+                )}
+                {pay === "faktura" && (
+                  <p className="card p-4 text-sm text-muted">Faktura skickas till angiven e-post/adress med 30 dagars betalningsvillkor.</p>
+                )}
+
+                <button onClick={placeOrder} disabled={placing} className="btn btn-primary w-full">
+                  {placing ? "Lägger order…" : `Betala ${kr(grand)} →`}
+                </button>
+                <p className="spec text-[10px] text-muted">Demo-kassa — ingen riktig betalning genomförs.</p>
+              </section>
+            )}
+
+            <Upsell
+              design={cart.design}
+              business={business}
+              addons={addons}
+              onAdd={(a) => updateAddons([...addons, a])}
+            />
+          </div>
+
+          {/* summary */}
+          <aside className="lg:sticky lg:top-20 lg:self-start">
+            <div className="card overflow-hidden">
+              <div className="flex gap-3 border-b border-line p-4">
+                <div className="h-20 w-20 flex-none rounded-[10px] bg-paper-2">
+                  <DesignThumb design={cart.design} />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate head text-lg leading-none">{cart.design.name}</p>
+                  <p className="spec mt-1 text-[11px] text-muted">
+                    {g.name} · {g.colors[cart.design.colorIndex]?.name} · {cart.design.size}
+                  </p>
+                  <p className="spec text-[11px] text-muted">{cart.qty} st</p>
+                </div>
+              </div>
+              {addonRows.map(({ a, ag, ap }) => (
+                <div key={a.id} className="flex items-center gap-3 border-b border-line px-4 py-3">
+                  <div className="h-12 w-12 flex-none rounded-[10px] bg-paper-2">
+                    <DesignThumb design={{ ...cart.design, garmentId: a.garmentId, colorIndex: a.colorIndex }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate head text-sm leading-none">+ {ag.name}</p>
+                    <p className="spec text-[10px] text-muted">{a.qty} st · {ag.colors[a.colorIndex]?.name}</p>
+                  </div>
+                  <span className="spec text-[11px]">{kr(pick(ap))}</span>
+                  <button
+                    onClick={() => updateAddons(addons.filter((x) => x.id !== a.id))}
+                    className="text-muted hover:text-bad"
+                    title="Ta bort tillägg"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <div className="space-y-1.5 p-4 text-sm">
+                <Sum label={business ? "Delsumma exkl. moms" : "Delsumma"} value={kr(itemsSum)} />
+                <Sum label="Frakt" value={shipping === 0 ? "Fri" : kr(shipping)} />
+                {!business && <Sum label="varav moms" value={kr(vatSum)} muted />}
+                {business && <Sum label="Moms tillkommer (25%)" value={kr(vatSum)} muted />}
+              </div>
+              <div className="flex items-center justify-between border-t border-line bg-paper-2 p-4">
+                <span className="head">Att betala</span>
+                <span className="font-display text-3xl text-ink">{kr(grand)}</span>
+              </div>
+            </div>
+            <p className="mt-3 flex items-center gap-2 spec text-[11px] text-muted">
+              <ChevronMark size={14} color="#00AEEF" /> Tryckfärdig fil genereras automatiskt vid order.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
+function Upsell({
+  design,
+  business,
+  addons,
+  onAdd,
+}: {
+  design: Cart["design"];
+  business: boolean;
+  addons: CartAddon[];
+  onAdd: (a: CartAddon) => void;
+}) {
+  // Matchande plagg — kundens design applicerad, ren marginal.
+  const suggestions = GARMENTS.filter(
+    (g) => g.id !== design.garmentId && !addons.some((a) => a.garmentId === g.id)
+  )
+    .filter((g) => ["cap", "bag", "tshirt", "hoodie"].includes(g.id))
+    .slice(0, 2);
+
+  if (!suggestions.length) return null;
+
+  return (
+    <section className="mt-8 rounded-[14px] border border-line bg-paper-2 p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <ChevronMark size={16} color="#FFDA00" />
+        <h2 className="head text-lg">Matcha din design</h2>
+      </div>
+      <p className="mb-4 text-sm text-muted">Samma tryck, ett klick — perfekt komplement.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {suggestions.map((g) => {
+          const applied = { ...design, garmentId: g.id, colorIndex: 0 };
+          const p = computePrice(g, computePrintArea(design.elements, g), 1);
+          const shown = business ? p.subtotalExclVat : p.subtotalInclVat;
+          return (
+            <div key={g.id} className="card flex items-center gap-3 p-3">
+              <div className="h-16 w-16 flex-none rounded-[10px] bg-paper-2">
+                <DesignThumb design={applied} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="head leading-none">{g.name}</p>
+                <p className="spec mt-1 text-[11px] text-cyan">+ {kr(shown)}</p>
+              </div>
+              <button
+                onClick={() =>
+                  onAdd({ id: uid("add"), garmentId: g.id, colorIndex: 0, size: g.sizes[Math.floor(g.sizes.length / 2)], qty: 1 })
+                }
+                className="btn btn-outline btn-sm"
+              >
+                Lägg till
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function Field({ label, type = "text", full, placeholder }: { label: string; type?: string; full?: boolean; placeholder?: string }) {
+  return (
+    <label className={`block ${full ? "sm:col-span-2" : ""}`}>
+      <span className="eyebrow mb-1 block">{label}</span>
+      <input type={type} placeholder={placeholder} className="field" />
+    </label>
+  );
+}
+
+function Radio({ name, label, note, defaultChecked }: { name: string; label: string; note: string; defaultChecked?: boolean }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-line p-3 hover:border-line-2">
+      <input type="radio" name={name} defaultChecked={defaultChecked} className="h-4 w-4 accent-[var(--color-signal)]" />
+      <span>
+        <span className="block head text-sm">{label}</span>
+        <span className="spec text-[11px] text-muted">{note}</span>
+      </span>
+    </label>
+  );
+}
+
+function Sum({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="flex justify-between">
+      <span className={muted ? "text-muted" : ""}>{label}</span>
+      <span className="tabular-nums">{value}</span>
+    </div>
+  );
+}
