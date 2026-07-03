@@ -14,7 +14,6 @@ import {
   getCart,
   setCart as persistCart,
   clearCart,
-  createOrder,
 } from "@/lib/account";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { GARMENTS, getGarment } from "@/lib/garments";
@@ -31,10 +30,22 @@ export default function Kassa() {
   const [addons, setAddons] = useState<CartAddon[]>([]);
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0); // 0 leverans, 1 betalning
-  const { profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const business = profile?.business ?? false;
   const [pay, setPay] = useState<Pay>("swish");
   const [placing, setPlacing] = useState(false);
+  const [shipMethod, setShipMethod] = useState<"postombud" | "hemleverans">("postombud");
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    address: "",
+    zip: "",
+    city: "",
+    company: "",
+  });
+  const setField = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   useEffect(() => {
     const c = getCart();
@@ -42,6 +53,21 @@ export default function Kassa() {
     setAddons(c?.addons ?? []);
     setReady(true);
   }, []);
+
+  // Förifyll namn/e-post från profilen när den laddats.
+  useEffect(() => {
+    if (!profile && !user) return;
+    setForm((f) => {
+      const nameParts = (profile?.name ?? "").split(" ");
+      return {
+        ...f,
+        firstName: f.firstName || nameParts[0] || "",
+        lastName: f.lastName || nameParts.slice(1).join(" ") || "",
+        email: f.email || user?.email || "",
+        company: f.company || profile?.company_name || "",
+      };
+    });
+  }, [profile, user]);
 
   function updateAddons(next: CartAddon[]) {
     setAddons(next);
@@ -82,31 +108,53 @@ export default function Kassa() {
   const shipping = inclVatSum >= 800 ? 0 : 59;
   const grand = itemsSum + shipping;
 
-  function placeOrder() {
-    if (!cart) return;
+  async function placeOrder() {
+    if (!cart || placing) return;
+    if (!user) {
+      router.push("/logga-in?next=/kassa");
+      return;
+    }
     setPlacing(true);
-    const order = createOrder({
-      total: Math.round(grand),
-      design: cart.design,
-      business,
-      lines: [
-        {
-          garmentId: cart.design.garmentId,
-          colorIndex: cart.design.colorIndex,
-          size: cart.design.size,
-          qty: cart.qty,
-        },
-        ...addons.map((a) => ({
-          garmentId: a.garmentId,
-          colorIndex: a.colorIndex,
-          size: a.size,
-          qty: a.qty,
-        })),
-      ],
-    });
-    clearCart();
-    push({ kind: "success", title: "Order lagd!", msg: order.ref });
-    router.push(`/order/${order.id}`);
+    const lines = [
+      {
+        garmentId: cart.design.garmentId,
+        colorIndex: cart.design.colorIndex,
+        size: cart.design.size,
+        qty: cart.qty,
+      },
+      ...addons.map((a) => ({
+        garmentId: a.garmentId,
+        colorIndex: a.colorIndex,
+        size: a.size,
+        qty: a.qty,
+      })),
+    ];
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          design: cart.design,
+          lines,
+          contact: form,
+          shipping: { method: shipMethod },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Något gick fel.");
+      }
+      clearCart();
+      push({ kind: "success", title: "Order lagd!", msg: data.ref });
+      router.push(`/order/${data.id}`);
+    } catch (err) {
+      setPlacing(false);
+      push({
+        kind: "error",
+        title: "Kunde inte lägga ordern",
+        msg: err instanceof Error ? err.message : "Försök igen.",
+      });
+    }
   }
 
   return (
@@ -126,22 +174,47 @@ export default function Kassa() {
               <section className="space-y-5">
                 <h2 className="head text-2xl">Leverans</h2>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Förnamn" />
-                  <Field label="Efternamn" />
-                  <Field label="E-post" type="email" full />
-                  <Field label="Adress" full />
-                  <Field label="Postnummer" />
-                  <Field label="Ort" />
-                  {business && <Field label="Företag / org.nr" full />}
+                  <Field label="Förnamn" value={form.firstName} onChange={setField("firstName")} />
+                  <Field label="Efternamn" value={form.lastName} onChange={setField("lastName")} />
+                  <Field label="E-post" type="email" full value={form.email} onChange={setField("email")} />
+                  <Field label="Adress" full value={form.address} onChange={setField("address")} />
+                  <Field label="Postnummer" value={form.zip} onChange={setField("zip")} />
+                  <Field label="Ort" value={form.city} onChange={setField("city")} />
+                  {business && (
+                    <Field label="Företag / org.nr" full value={form.company} onChange={setField("company")} />
+                  )}
                 </div>
                 <div>
                   <h3 className="eyebrow mb-2">Leveranssätt</h3>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <Radio name="ship" label="Postombud" note="2–4 dagar · 59 kr" defaultChecked />
-                    <Radio name="ship" label="Hemleverans" note="1–3 dagar · 79 kr" />
+                    <Radio
+                      name="ship"
+                      label="Postombud"
+                      note="2–4 dagar · 59 kr"
+                      checked={shipMethod === "postombud"}
+                      onChange={() => setShipMethod("postombud")}
+                    />
+                    <Radio
+                      name="ship"
+                      label="Hemleverans"
+                      note="1–3 dagar · 79 kr"
+                      checked={shipMethod === "hemleverans"}
+                      onChange={() => setShipMethod("hemleverans")}
+                    />
                   </div>
                 </div>
-                <button onClick={() => setStep(1)} className="btn btn-primary">Till betalning →</button>
+                <button
+                  onClick={() => {
+                    if (!form.firstName || !form.email || !form.address || !form.zip || !form.city) {
+                      push({ kind: "error", title: "Fyll i leveransuppgifterna", msg: "Namn, e-post, adress, postnr och ort krävs." });
+                      return;
+                    }
+                    setStep(1);
+                  }}
+                  className="btn btn-primary"
+                >
+                  Till betalning →
+                </button>
               </section>
             ) : (
               <section className="space-y-5">
@@ -309,19 +382,54 @@ function Upsell({
   );
 }
 
-function Field({ label, type = "text", full, placeholder }: { label: string; type?: string; full?: boolean; placeholder?: string }) {
+function Field({
+  label,
+  type = "text",
+  full,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string;
+  type?: string;
+  full?: boolean;
+  placeholder?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
       <span className="eyebrow mb-1 block">{label}</span>
-      <input type={type} placeholder={placeholder} className="field" />
+      <input type={type} placeholder={placeholder} className="field" value={value} onChange={onChange} />
     </label>
   );
 }
 
-function Radio({ name, label, note, defaultChecked }: { name: string; label: string; note: string; defaultChecked?: boolean }) {
+function Radio({
+  name,
+  label,
+  note,
+  defaultChecked,
+  checked,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  note: string;
+  defaultChecked?: boolean;
+  checked?: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-line p-3 hover:border-line-2">
-      <input type="radio" name={name} defaultChecked={defaultChecked} className="h-4 w-4 accent-[var(--color-signal)]" />
+      <input
+        type="radio"
+        name={name}
+        defaultChecked={defaultChecked}
+        checked={checked}
+        onChange={onChange}
+        className="h-4 w-4 accent-[var(--color-signal)]"
+      />
       <span>
         <span className="block head text-sm">{label}</span>
         <span className="spec text-[11px] text-muted">{note}</span>

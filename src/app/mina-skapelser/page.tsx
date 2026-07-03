@@ -9,13 +9,13 @@ import { ChevronMark } from "@/components/ui/ChevronMark";
 import { useToast, useStoreTick } from "@/components/ui/Toast";
 import { DesignSnapshot } from "@/lib/store";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { createClient } from "@/lib/supabase/client";
 import {
   getDesigns,
   deleteDesign,
   saveDesign,
   shareDesign,
   setCart,
-  getOrders,
   Order,
 } from "@/lib/account";
 import { getGarment } from "@/lib/garments";
@@ -37,7 +37,6 @@ export default function MinaSkapelser() {
 
   function refresh() {
     setDesigns(getDesigns());
-    setOrders(getOrders());
   }
   useEffect(() => {
     refresh();
@@ -46,6 +45,24 @@ export default function MinaSkapelser() {
     window.addEventListener("tryck-store", h);
     return () => window.removeEventListener("tryck-store", h);
   }, []);
+
+  // Ordrar från databasen (RLS ger bara mina egna).
+  useEffect(() => {
+    if (!user) {
+      setOrders([]);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setOrders(
+          (data ?? []).map((o) => ({ ...o, createdAt: o.created_at }) as Order)
+        );
+      });
+  }, [user]);
 
   function duplicate(d: DesignSnapshot) {
     saveDesign({ ...d, id: uid("dsn"), name: d.name + " (kopia)", updatedAt: Date.now() });

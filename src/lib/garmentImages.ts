@@ -1,4 +1,4 @@
-// Auto-genererad: Printful mockup-generator (riktiga per-färg-renders, modellfria). Fram + bak.
+// Printful mockup-generator (modellfria, produktlik-poäng valde ren bild). Fram + bak.
 export type GarmentImg = { hex: string; src: string };
 export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: GarmentImg[] }> = {
   "tshirt": {
@@ -37,6 +37,10 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
       }
     ],
     back: [
+      {
+        hex: "#141414",
+        src: "/garments/tshirt-svart-back.jpg"
+      },
       {
         hex: "#1c2a44",
         src: "/garments/tshirt-marin-back.jpg"
@@ -124,6 +128,10 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
         src: "/garments/hoodie-grafit-back.jpg"
       },
       {
+        hex: "#ff4d1c",
+        src: "/garments/hoodie-signal-back.jpg"
+      },
+      {
         hex: "#d8cbb2",
         src: "/garments/hoodie-sand-back.jpg"
       },
@@ -138,6 +146,10 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
       {
         hex: "#141414",
         src: "/garments/longsleeve-svart.jpg"
+      },
+      {
+        hex: "#1c2a44",
+        src: "/garments/longsleeve-marin.jpg"
       },
       {
         hex: "#ff4d1c",
@@ -164,6 +176,10 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
       {
         hex: "#141414",
         src: "/garments/longsleeve-svart-back.jpg"
+      },
+      {
+        hex: "#1c2a44",
+        src: "/garments/longsleeve-marin-back.jpg"
       },
       {
         hex: "#ff4d1c",
@@ -194,20 +210,32 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
         src: "/garments/tank-svart.jpg"
       },
       {
-        hex: "#1f4030",
-        src: "/garments/tank-flaskgron.jpg"
+        hex: "#f4f4f0",
+        src: "/garments/tank-vit.jpg"
       },
       {
-        hex: "#ff4d1c",
-        src: "/garments/tank-signal.jpg"
+        hex: "#3d3d3d",
+        src: "/garments/tank-grafit.jpg"
+      },
+      {
+        hex: "#1c2a44",
+        src: "/garments/tank-marin.jpg"
+      },
+      {
+        hex: "#b3122b",
+        src: "/garments/tank-cerise.jpg"
+      },
+      {
+        hex: "#1f4030",
+        src: "/garments/tank-flaskgron.jpg"
       },
       {
         hex: "#d8cbb2",
         src: "/garments/tank-sand.jpg"
       },
       {
-        hex: "#f4f4f0",
-        src: "/garments/tank-vit.jpg"
+        hex: "#ff4d1c",
+        src: "/garments/tank-signal.jpg"
       }
     ],
     back: [
@@ -216,20 +244,32 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
         src: "/garments/tank-svart-back.jpg"
       },
       {
-        hex: "#1f4030",
-        src: "/garments/tank-flaskgron-back.jpg"
+        hex: "#f4f4f0",
+        src: "/garments/tank-vit-back.jpg"
       },
       {
-        hex: "#ff4d1c",
-        src: "/garments/tank-signal-back.jpg"
+        hex: "#3d3d3d",
+        src: "/garments/tank-grafit-back.jpg"
+      },
+      {
+        hex: "#1c2a44",
+        src: "/garments/tank-marin-back.jpg"
+      },
+      {
+        hex: "#b3122b",
+        src: "/garments/tank-cerise-back.jpg"
+      },
+      {
+        hex: "#1f4030",
+        src: "/garments/tank-flaskgron-back.jpg"
       },
       {
         hex: "#d8cbb2",
         src: "/garments/tank-sand-back.jpg"
       },
       {
-        hex: "#f4f4f0",
-        src: "/garments/tank-vit-back.jpg"
+        hex: "#ff4d1c",
+        src: "/garments/tank-signal-back.jpg"
       }
     ]
   },
@@ -244,8 +284,16 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
         src: "/garments/jacket-marin.jpg"
       },
       {
+        hex: "#1f4030",
+        src: "/garments/jacket-flaskgron.jpg"
+      },
+      {
         hex: "#3d3d3d",
         src: "/garments/jacket-grafit.jpg"
+      },
+      {
+        hex: "#b3122b",
+        src: "/garments/jacket-cerise.jpg"
       },
       {
         hex: "#ff4d1c",
@@ -254,6 +302,10 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
       {
         hex: "#d8cbb2",
         src: "/garments/jacket-sand.jpg"
+      },
+      {
+        hex: "#f4f4f0",
+        src: "/garments/jacket-vit.jpg"
       }
     ],
     back: [
@@ -294,30 +346,70 @@ export const GARMENT_IMAGES: Record<string, { front: GarmentImg[]; back: Garment
   "shorts": {
     front: [
       {
-        hex: "#ff4d1c",
-        src: "/garments/shorts-signal.jpg"
+        hex: "#141414",
+        src: "/garments/shorts-svart.jpg"
+      },
+      {
+        hex: "#f4f4f0",
+        src: "/garments/shorts-vit.jpg"
+      },
+      {
+        hex: "#3d3d3d",
+        src: "/garments/shorts-grafit.jpg"
+      },
+      {
+        hex: "#1c2a44",
+        src: "/garments/shorts-marin.jpg"
+      },
+      {
+        hex: "#b3122b",
+        src: "/garments/shorts-cerise.jpg"
+      },
+      {
+        hex: "#1f4030",
+        src: "/garments/shorts-flaskgron.jpg"
       },
       {
         hex: "#d8cbb2",
         src: "/garments/shorts-sand.jpg"
       },
       {
-        hex: "#f4f4f0",
-        src: "/garments/shorts-vit.jpg"
+        hex: "#ff4d1c",
+        src: "/garments/shorts-signal.jpg"
       }
     ],
     back: [
       {
-        hex: "#ff4d1c",
-        src: "/garments/shorts-signal-back.jpg"
+        hex: "#141414",
+        src: "/garments/shorts-svart-back.jpg"
+      },
+      {
+        hex: "#f4f4f0",
+        src: "/garments/shorts-vit-back.jpg"
+      },
+      {
+        hex: "#3d3d3d",
+        src: "/garments/shorts-grafit-back.jpg"
+      },
+      {
+        hex: "#1c2a44",
+        src: "/garments/shorts-marin-back.jpg"
+      },
+      {
+        hex: "#b3122b",
+        src: "/garments/shorts-cerise-back.jpg"
+      },
+      {
+        hex: "#1f4030",
+        src: "/garments/shorts-flaskgron-back.jpg"
       },
       {
         hex: "#d8cbb2",
         src: "/garments/shorts-sand-back.jpg"
       },
       {
-        hex: "#f4f4f0",
-        src: "/garments/shorts-vit-back.jpg"
+        hex: "#ff4d1c",
+        src: "/garments/shorts-signal-back.jpg"
       }
     ]
   },

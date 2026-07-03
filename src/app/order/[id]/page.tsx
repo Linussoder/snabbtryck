@@ -10,11 +10,10 @@ import { useToast } from "@/components/ui/Toast";
 import {
   Order,
   OrderStatus,
-  getOrder,
-  setOrderStatus,
   setCart,
   shareDesign,
 } from "@/lib/account";
+import { createClient } from "@/lib/supabase/client";
 import { getGarment } from "@/lib/garments";
 import { qrDataUrl } from "@/lib/qr";
 import { kr } from "@/lib/format";
@@ -34,14 +33,24 @@ export default function OrderPage() {
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
-    const o = getOrder(params.id);
-    setOrder(o);
-    setReady(true);
-    if (o) {
-      const token = shareDesign(o.design);
-      const url = `${window.location.origin}/delad/${token}`;
-      qrDataUrl(url).then(setQr).catch(() => {});
-    }
+    const supabase = createClient();
+    supabase
+      .from("orders")
+      .select("*")
+      .eq("id", params.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const o: Order | null = data
+          ? ({ ...data, createdAt: data.created_at } as Order)
+          : null;
+        setOrder(o);
+        setReady(true);
+        if (o) {
+          const token = shareDesign(o.design);
+          const url = `${window.location.origin}/delad/${token}`;
+          qrDataUrl(url).then(setQr).catch(() => {});
+        }
+      });
   }, [params.id]);
 
   if (!ready) return <PageShell><div className="p-16" /></PageShell>;
@@ -64,12 +73,6 @@ export default function OrderPage() {
   const views = g.views.filter((v) => order.design.elements.some((e) => e.view === v));
   const showViews = views.length ? views : [g.views[0]];
 
-  function advance() {
-    if (!order) return;
-    const nextIdx = Math.min(stepIdx + 1, STEPS.length - 1);
-    setOrderStatus(order.id, STEPS[nextIdx].key);
-    setOrder(getOrder(order.id));
-  }
   function reorder() {
     if (!order) return;
     setCart({ design: order.design, qty: order.lines[0]?.qty ?? 1 });
@@ -136,11 +139,6 @@ export default function OrderPage() {
                 );
               })}
             </ol>
-            {stepIdx < STEPS.length - 1 && (
-              <button onClick={advance} className="btn btn-ghost btn-sm mt-5">
-                ⏵ Simulera nästa status (demo)
-              </button>
-            )}
           </section>
         </div>
 
