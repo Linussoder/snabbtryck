@@ -2,139 +2,156 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { fetchOrders, fetchLeads, type AdminOrder, type Lead } from "@/lib/admin-data";
+import { computeOrderMargin } from "@/lib/margin";
 import { getGarment } from "@/lib/garments";
-import { kr } from "@/lib/format";
-import type { Order, OrderStatus } from "@/lib/account";
+import { kr, pct } from "@/lib/format";
+import { Kpi, Sparkline, StatusBadge } from "@/components/admin/ui";
+import type { OrderStatus } from "@/lib/account";
 
-interface AdminOrder extends Order {
-  contact: { email?: string; firstName?: string; lastName?: string };
-  created_at: string;
-}
+const DAY = 86400000;
 
-const STATUSES: (OrderStatus | "Alla")[] = ["Alla", "Mottagen", "I tryck", "Skickad"];
-
-const STATUS_STYLE: Record<OrderStatus, string> = {
-  Mottagen: "border-warn text-warn",
-  "I tryck": "border-cyan text-cyan",
-  Skickad: "border-signal text-signal",
-};
-
-export default function AdminOrders() {
+export default function AdminDashboard() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [ready, setReady] = useState(false);
-  const [filter, setFilter] = useState<OrderStatus | "Alla">("Alla");
-  const [q, setQ] = useState("");
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setOrders((data ?? []) as AdminOrder[]);
-        setReady(true);
-      });
+    Promise.all([fetchOrders(), fetchLeads()]).then(([o, l]) => {
+      setOrders(o);
+      setLeads(l);
+      setReady(true);
+    });
   }, []);
 
-  const rows = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return orders.filter((o) => {
-      if (filter !== "Alla" && o.status !== filter) return false;
-      if (!needle) return true;
-      const email = (o.contact?.email ?? "").toLowerCase();
-      return o.ref.toLowerCase().includes(needle) || email.includes(needle);
-    });
-  }, [orders, filter, q]);
+  const s = useMemo(() => {
+    const now = Date.now();
+    const in30 = orders.filter((o) => now - o.createdAt <= 30 * DAY);
+    const revenue30 = in30.reduce((a, o) => a + o.total, 0);
+    const profit30 = in30.reduce((a, o) => a + computeOrderMargin(o).profit, 0);
+    const byStatus: Record<string, number> = { Mottagen: 0, "I tryck": 0, Skickad: 0 };
+    orders.forEach((o) => (byStatus[o.status] = (byStatus[o.status] ?? 0) + 1));
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { Alla: orders.length };
-    for (const o of orders) c[o.status] = (c[o.status] ?? 0) + 1;
-    return c;
+    // 14-dagars daglig omsättning
+    const trend: number[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const dayStart = now - i * DAY;
+      const rev = orders
+        .filter((o) => o.createdAt >= dayStart - DAY && o.createdAt < dayStart)
+        .reduce((a, o) => a + o.total, 0);
+      trend.push(rev);
+    }
+
+    // top plagg (efter antal)
+    const garmentQty: Record<string, number> = {};
+    orders.forEach((o) =>
+      o.lines.forEach((l) => {
+        const name = getGarment(l.garmentId).name;
+        garmentQty[name] = (garmentQty[name] ?? 0) + l.qty;
+      })
+    );
+    const topGarments = Object.entries(garmentQty).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const maxGarment = topGarments[0]?.[1] ?? 1;
+
+    return {
+      revenue30,
+      profit30,
+      count30: in30.length,
+      aov: in30.length ? Math.round(revenue30 / in30.length) : 0,
+      marginPct: revenue30 > 0 ? profit30 / revenue30 : 0,
+      byStatus,
+      trend,
+      topGarments,
+      maxGarment,
+      needAction: (byStatus["Mottagen"] ?? 0) + (byStatus["I tryck"] ?? 0),
+    };
   }, [orders]);
 
+  if (!ready) return <div className="p-8 text-muted">Laddar översikt…</div>;
+
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-8 md:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow text-muted">Internt · orderhantering</p>
-          <h1 className="display text-3xl sm:text-4xl">Inkomna ordrar</h1>
-        </div>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Sök ordernr eller e-post…"
-          className="field max-w-xs"
-        />
+    <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-8">
+      <div className="mb-6">
+        <p className="eyebrow text-muted">Internt · översikt</p>
+        <h1 className="display text-3xl sm:text-4xl">God dag. Här är läget.</h1>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {STATUSES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-              filter === s ? "border-ink bg-ink text-paper" : "border-line text-muted hover:border-ink"
-            }`}
-          >
-            {s} {counts[s] ? <span className="opacity-60">· {counts[s]}</span> : null}
-          </button>
-        ))}
-      </div>
-
-      {!ready ? (
-        <div className="card p-12 text-center text-muted">Laddar ordrar…</div>
-      ) : rows.length === 0 ? (
+      {orders.length === 0 ? (
         <div className="card p-12 text-center text-muted">
-          {orders.length === 0 ? "Inga ordrar ännu." : "Inga ordrar matchar filtret."}
+          Inga ordrar ännu. När kunder beställer dyker allt upp här.
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line text-left">
-                <th className="px-4 py-3 font-normal eyebrow">Order</th>
-                <th className="px-4 py-3 font-normal eyebrow">Datum</th>
-                <th className="px-4 py-3 font-normal eyebrow">Kund</th>
-                <th className="px-4 py-3 font-normal eyebrow">Plagg</th>
-                <th className="px-4 py-3 text-right font-normal eyebrow">Summa</th>
-                <th className="px-4 py-3 font-normal eyebrow">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((o) => {
-                const g = getGarment(o.design.garmentId);
-                const qty = o.lines.reduce((s, l) => s + l.qty, 0);
-                const date = new Date(o.created_at).toLocaleDateString("sv-SE", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                return (
-                  <tr key={o.id} className="border-b border-line last:border-0 hover:bg-paper-2">
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/order/${o.id}`} className="head uppercase hover:text-signal">
-                        {o.ref}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-muted tabular-nums">{date}</td>
-                    <td className="px-4 py-3">{o.contact?.email ?? "—"}</td>
-                    <td className="px-4 py-3">
-                      {g.name} · {qty} st
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{kr(o.total)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`spec rounded-full border px-2 py-0.5 text-[10px] uppercase ${STATUS_STYLE[o.status]}`}>
-                        {o.status}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-6">
+          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi label="Omsättning 30 d" value={kr(s.revenue30)} sub={`${s.count30} ordrar`} />
+            <Kpi label="Snittordervärde" value={kr(s.aov)} />
+            <Kpi label="Vinst 30 d" value={kr(s.profit30)} accent={s.profit30 >= 0} />
+            <Kpi label="Marginal 30 d" value={pct(s.marginPct)} accent={s.marginPct >= 0.35} />
+          </section>
+
+          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+            <section className="card p-5">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="eyebrow">Omsättning · 14 dagar</h2>
+                <span className="spec text-[11px] text-muted">{kr(s.trend.reduce((a, b) => a + b, 0))}</span>
+              </div>
+              <Sparkline data={s.trend} />
+            </section>
+
+            <section className="card p-5">
+              <h2 className="eyebrow mb-3">Att göra</h2>
+              <Link href="/admin/production" className="block rounded-lg border border-line p-3 hover:border-ink">
+                <p className="font-display text-3xl">{s.needAction}</p>
+                <p className="spec text-[11px] text-muted">ordrar väntar på tryck/skick →</p>
+              </Link>
+              <div className="mt-3 flex gap-2">
+                {(["Mottagen", "I tryck", "Skickad"] as OrderStatus[]).map((st) => (
+                  <div key={st} className="flex-1 rounded-lg bg-paper-2 p-2 text-center">
+                    <p className="font-display text-lg">{s.byStatus[st] ?? 0}</p>
+                    <StatusBadge status={st} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section className="card p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="eyebrow">Senaste ordrar</h2>
+                <Link href="/admin/orders" className="spec text-[11px] text-signal">Alla →</Link>
+              </div>
+              <div className="space-y-2">
+                {orders.slice(0, 6).map((o) => (
+                  <Link key={o.id} href={`/admin/orders/${o.id}`} className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-paper-2">
+                    <span className="head uppercase text-sm">{o.ref}</span>
+                    <span className="spec text-[11px] text-muted">{o.contact?.email ?? "—"}</span>
+                    <span className="tabular-nums text-sm">{kr(o.total)}</span>
+                    <StatusBadge status={o.status} />
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <section className="card p-5">
+              <h2 className="eyebrow mb-3">Mest sålda plagg</h2>
+              <div className="space-y-2">
+                {s.topGarments.map(([name, qty]) => (
+                  <div key={name} className="flex items-center gap-3">
+                    <span className="w-24 flex-none truncate text-sm">{name}</span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-paper-2">
+                      <div className="h-full rounded-full bg-signal" style={{ width: `${(qty / s.maxGarment) * 100}%` }} />
+                    </div>
+                    <span className="spec w-10 text-right text-[11px] text-muted">{qty} st</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/admin/leads" className="mt-4 block border-t border-line pt-3 text-sm hover:text-signal">
+                <span className="font-display text-lg">{leads.length}</span>{" "}
+                <span className="text-muted">leads från priskalkylatorn →</span>
+              </Link>
+            </section>
+          </div>
         </div>
       )}
     </div>
