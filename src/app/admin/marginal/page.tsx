@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { PageShell, PageHead } from "@/components/layout/PageShell";
+import { PageHead } from "@/components/layout/PageShell";
 import { ChevronMark } from "@/components/ui/ChevronMark";
-import { Order, getOrders } from "@/lib/account";
+import { createClient } from "@/lib/supabase/client";
+import type { Order } from "@/lib/account";
 import { computeOrderMargin, OrderMargin, COST } from "@/lib/margin";
 import { getGarment } from "@/lib/garments";
 import { kr, num, pct } from "@/lib/format";
@@ -22,8 +23,15 @@ export default function MarginalDashboard() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setOrders(getOrders());
-    setReady(true);
+    const supabase = createClient();
+    supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setOrders((data ?? []).map((o) => ({ ...o, createdAt: o.created_at }) as Order));
+        setReady(true);
+      });
   }, []);
 
   const rows = useMemo(
@@ -58,10 +66,10 @@ export default function MarginalDashboard() {
       .sort((a, b) => b.profit - a.profit);
   }, [rows]);
 
-  if (!ready) return <PageShell><div className="p-16" /></PageShell>;
+  if (!ready) return <div className="p-16" />;
 
   return (
-    <PageShell>
+    <>
       <PageHead
         index="INTERNT"
         title="Marginal per order"
@@ -153,7 +161,7 @@ export default function MarginalDashboard() {
           </>
         )}
       </div>
-    </PageShell>
+    </>
   );
 }
 
