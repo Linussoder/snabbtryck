@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEditor, usePrice } from "@/lib/store";
 import { GOOGLE_FONTS_HREF } from "@/lib/fonts";
 import { getDesign, getShared } from "@/lib/account";
+import { getDesignRemote } from "@/lib/designs-db";
 import { getOrg } from "@/lib/orgs";
 import { getGarment } from "@/lib/garments";
 import { PriceDisplay } from "@/components/ui/PriceDisplay";
@@ -63,8 +64,11 @@ export function EditorShell() {
     const garment = params.get("garment");
     const org = params.get("org");
     if (designId) {
-      const d = getDesign(designId);
-      if (d) loadSnapshot(d);
+      // Försök hämta från kontot (DB) först, fall tillbaka på lokalt utkast.
+      getDesignRemote(designId).then((remote) => {
+        const d = remote ?? getDesign(designId);
+        if (d) loadSnapshot(d);
+      });
     } else if (shared) {
       const d = getShared(shared);
       if (d) loadSnapshot({ ...d, id: "", name: d.name + " (kopia)" });

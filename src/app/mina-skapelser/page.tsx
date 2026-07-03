@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
@@ -10,10 +10,8 @@ import { useToast, useStoreTick } from "@/components/ui/Toast";
 import { DesignSnapshot } from "@/lib/store";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
+import { getDesignsRemote, saveDesignRemote, deleteDesignRemote } from "@/lib/designs-db";
 import {
-  getDesigns,
-  deleteDesign,
-  saveDesign,
   shareDesign,
   setCart,
   Order,
@@ -35,37 +33,30 @@ export default function MinaSkapelser() {
   const [ready, setReady] = useState(false);
   const [emailFor, setEmailFor] = useState<DesignSnapshot | null>(null);
 
-  function refresh() {
-    setDesigns(getDesigns());
-  }
-  useEffect(() => {
-    refresh();
-    setReady(true);
-    const h = () => refresh();
-    window.addEventListener("tryck-store", h);
-    return () => window.removeEventListener("tryck-store", h);
-  }, []);
-
-  // Ordrar från databasen (RLS ger bara mina egna).
-  useEffect(() => {
+  // Designer + ordrar från databasen (RLS ger bara mina egna).
+  const refresh = useCallback(async () => {
     if (!user) {
+      setDesigns([]);
       setOrders([]);
       return;
     }
     const supabase = createClient();
-    supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setOrders(
-          (data ?? []).map((o) => ({ ...o, createdAt: o.created_at }) as Order)
-        );
-      });
+    const [designsRes, ordersRes] = await Promise.all([
+      getDesignsRemote(),
+      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+    ]);
+    setDesigns(designsRes);
+    setOrders(
+      (ordersRes.data ?? []).map((o) => ({ ...o, createdAt: o.created_at }) as Order)
+    );
   }, [user]);
 
-  function duplicate(d: DesignSnapshot) {
-    saveDesign({ ...d, id: uid("dsn"), name: d.name + " (kopia)", updatedAt: Date.now() });
+  useEffect(() => {
+    refresh().finally(() => setReady(true));
+  }, [refresh]);
+
+  async function duplicate(d: DesignSnapshot) {
+    await saveDesignRemote({ ...d, id: uid("dsn"), name: d.name + " (kopia)", updatedAt: Date.now() });
     push({ kind: "success", title: "Design duplicerad" });
     refresh();
   }
@@ -79,9 +70,9 @@ export default function MinaSkapelser() {
     setCart({ design: d, qty: d.qty });
     router.push("/kassa");
   }
-  function remove(d: DesignSnapshot) {
+  async function remove(d: DesignSnapshot) {
     if (!confirm(`Ta bort "${d.name}"?`)) return;
-    deleteDesign(d.id);
+    await deleteDesignRemote(d.id);
     push({ kind: "info", title: "Design borttagen" });
     refresh();
   }

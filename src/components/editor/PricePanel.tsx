@@ -13,6 +13,7 @@ import {
   shareDesign,
   setCart,
 } from "@/lib/account";
+import { saveDesignRemote } from "@/lib/designs-db";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export function PricePanel() {
@@ -31,7 +32,7 @@ export function PricePanel() {
   const setName = useEditor((s) => s.setName);
   const color = garment.colors[colorIndex] ?? garment.colors[0];
 
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const business = profile?.business ?? false;
 
   // kvalitetsvarningar
@@ -52,9 +53,19 @@ export function PricePanel() {
   const next = nextTier(qty);
   const shown = business ? price.subtotalExclVat : price.subtotalInclVat;
 
-  function save() {
-    saveDesign(serialize());
-    push({ kind: "success", title: "Design sparad", msg: "Hittas under Mina skapelser." });
+  async function save() {
+    const snap = serialize();
+    try {
+      if (user) {
+        await saveDesignRemote(snap);
+        push({ kind: "success", title: "Design sparad", msg: "Synkad till ditt konto — hittas under Mina skapelser." });
+      } else {
+        saveDesign(snap);
+        push({ kind: "success", title: "Design sparad lokalt", msg: "Logga in för att spara den i ditt konto." });
+      }
+    } catch {
+      push({ kind: "error", title: "Kunde inte spara", msg: "Försök igen." });
+    }
   }
 
   function share() {
