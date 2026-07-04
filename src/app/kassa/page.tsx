@@ -16,6 +16,8 @@ import {
   clearCart,
 } from "@/lib/account";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useSettings } from "@/components/settings/SettingsProvider";
+import { shippingCostFor } from "@/lib/settings";
 import { GARMENTS, getGarment } from "@/lib/garments";
 import { computePrice } from "@/lib/pricing";
 import { computePrintArea, uid } from "@/lib/store";
@@ -31,10 +33,11 @@ export default function Kassa() {
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0); // 0 leverans, 1 betalning
   const { user, profile, loading } = useAuth();
+  const { pricing, shipping: shipCfg } = useSettings();
   const business = profile?.business ?? false;
   const [pay, setPay] = useState<Pay>("swish");
   const [placing, setPlacing] = useState(false);
-  const [shipMethod, setShipMethod] = useState<"postombud" | "hemleverans">("postombud");
+  const [shipMethod, setShipMethod] = useState<string>("postombud");
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -92,11 +95,11 @@ export default function Kassa() {
   }
 
   const g = getGarment(cart.design.garmentId);
-  const price = computePrice(g, computePrintArea(cart.design.elements, g), cart.qty);
+  const price = computePrice(g, computePrintArea(cart.design.elements, g), cart.qty, pricing);
 
   const addonRows = addons.map((a) => {
     const ag = getGarment(a.garmentId);
-    const ap = computePrice(ag, computePrintArea(cart.design.elements, ag), a.qty);
+    const ap = computePrice(ag, computePrintArea(cart.design.elements, ag), a.qty, pricing);
     return { a, ag, ap };
   });
   const pick = (p: { subtotalInclVat: number; subtotalExclVat: number }) =>
@@ -105,7 +108,7 @@ export default function Kassa() {
   const inclVatSum =
     price.subtotalInclVat + addonRows.reduce((s, r) => s + r.ap.subtotalInclVat, 0);
   const vatSum = price.vat + addonRows.reduce((s, r) => s + r.ap.vat, 0);
-  const shipping = inclVatSum >= 800 ? 0 : 59;
+  const shipping = shippingCostFor(shipCfg, inclVatSum, shipMethod);
   const grand = itemsSum + shipping;
 
   async function placeOrder() {
@@ -187,20 +190,16 @@ export default function Kassa() {
                 <div>
                   <h3 className="eyebrow mb-2">Leveranssätt</h3>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <Radio
-                      name="ship"
-                      label="Postombud"
-                      note="2–4 dagar · 59 kr"
-                      checked={shipMethod === "postombud"}
-                      onChange={() => setShipMethod("postombud")}
-                    />
-                    <Radio
-                      name="ship"
-                      label="Hemleverans"
-                      note="1–3 dagar · 79 kr"
-                      checked={shipMethod === "hemleverans"}
-                      onChange={() => setShipMethod("hemleverans")}
-                    />
+                    {shipCfg.methods.map((m) => (
+                      <Radio
+                        key={m.id}
+                        name="ship"
+                        label={m.label}
+                        note={`${m.deliveryDays} · ${inclVatSum >= shipCfg.freeThreshold ? "Fri" : m.price + " kr"}`}
+                        checked={shipMethod === m.id}
+                        onChange={() => setShipMethod(m.id)}
+                      />
+                    ))}
                   </div>
                 </div>
                 <button
@@ -337,6 +336,7 @@ function Upsell({
   onAdd: (a: CartAddon) => void;
 }) {
   // Matchande plagg — kundens design applicerad, ren marginal.
+  const { pricing } = useSettings();
   const suggestions = GARMENTS.filter(
     (g) => g.id !== design.garmentId && !addons.some((a) => a.garmentId === g.id)
   )
@@ -355,7 +355,7 @@ function Upsell({
       <div className="grid gap-3 sm:grid-cols-2">
         {suggestions.map((g) => {
           const applied = { ...design, garmentId: g.id, colorIndex: 0 };
-          const p = computePrice(g, computePrintArea(design.elements, g), 1);
+          const p = computePrice(g, computePrintArea(design.elements, g), 1, pricing);
           const shown = business ? p.subtotalExclVat : p.subtotalInclVat;
           return (
             <div key={g.id} className="card flex items-center gap-3 p-3">

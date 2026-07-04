@@ -3,6 +3,7 @@ import { Anton, Archivo_Black, Hanken_Grotesk, Space_Mono } from "next/font/goog
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { SettingsProvider } from "@/components/settings/SettingsProvider";
 
 // Display / logo — tall condensed caps (hero + wordmark)
 const anton = Anton({
@@ -51,7 +52,9 @@ export default function RootLayout({
         className={`${anton.variable} ${archivo.variable} ${hanken.variable} ${spaceMono.variable}`}
       >
         <AuthProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <SettingsProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>

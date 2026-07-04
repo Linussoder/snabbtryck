@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { fetchOrders, fetchLeads, type AdminOrder, type Lead } from "@/lib/admin-data";
+import { fetchOrders, fetchLeads, fetchSettings, type AdminOrder, type Lead, type AllSettings } from "@/lib/admin-data";
 import { computeOrderMargin } from "@/lib/margin";
 import { getGarment } from "@/lib/garments";
 import { kr, pct } from "@/lib/format";
@@ -14,12 +14,14 @@ const DAY = 86400000;
 export default function AdminDashboard() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [settings, setSettings] = useState<AllSettings | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchOrders(), fetchLeads()]).then(([o, l]) => {
+    Promise.all([fetchOrders(), fetchLeads(), fetchSettings()]).then(([o, l, st]) => {
       setOrders(o);
       setLeads(l);
+      setSettings(st);
       setReady(true);
     });
   }, []);
@@ -28,7 +30,7 @@ export default function AdminDashboard() {
     const now = Date.now();
     const in30 = orders.filter((o) => now - o.createdAt <= 30 * DAY);
     const revenue30 = in30.reduce((a, o) => a + o.total, 0);
-    const profit30 = in30.reduce((a, o) => a + computeOrderMargin(o).profit, 0);
+    const profit30 = in30.reduce((a, o) => a + computeOrderMargin(o, settings?.costs, settings?.pricing).profit, 0);
     const byStatus: Record<string, number> = { Mottagen: 0, "I tryck": 0, Skickad: 0 };
     orders.forEach((o) => (byStatus[o.status] = (byStatus[o.status] ?? 0) + 1));
 
@@ -65,7 +67,7 @@ export default function AdminDashboard() {
       maxGarment,
       needAction: (byStatus["Mottagen"] ?? 0) + (byStatus["I tryck"] ?? 0),
     };
-  }, [orders]);
+  }, [orders, settings]);
 
   if (!ready) return <div className="p-8 text-muted">Laddar översikt…</div>;
 

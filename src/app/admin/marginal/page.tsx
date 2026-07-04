@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/layout/PageShell";
 import { ChevronMark } from "@/components/ui/ChevronMark";
 import { createClient } from "@/lib/supabase/client";
+import { fetchSettings, type AllSettings } from "@/lib/admin-data";
 import type { Order } from "@/lib/account";
 import { computeOrderMargin, OrderMargin, COST } from "@/lib/margin";
 import { getGarment } from "@/lib/garments";
@@ -20,23 +21,24 @@ const SEG = [
 
 export default function MarginalDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [settings, setSettings] = useState<AllSettings | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setOrders((data ?? []).map((o) => ({ ...o, createdAt: o.created_at }) as Order));
-        setReady(true);
-      });
+    Promise.all([
+      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      fetchSettings(),
+    ]).then(([ordersRes, st]) => {
+      setOrders((ordersRes.data ?? []).map((o) => ({ ...o, createdAt: o.created_at }) as Order));
+      setSettings(st);
+      setReady(true);
+    });
   }, []);
 
   const rows = useMemo(
-    () => orders.map((o) => ({ o, m: computeOrderMargin(o) })),
-    [orders]
+    () => orders.map((o) => ({ o, m: computeOrderMargin(o, settings?.costs, settings?.pricing) })),
+    [orders, settings]
   );
 
   const totals = useMemo(() => {
@@ -154,9 +156,9 @@ export default function MarginalDashboard() {
             </section>
 
             <p className="spec text-[11px] text-muted">
-              Schabloner: plagg {pct(COST.garmentOfRetail)} av retail ex. moms · film {COST.filmPerCm2} kr/cm² ·
-              pulver/bläck {COST.consumablePerPrint} kr/plagg · frakt {COST.shippingPerOrder} kr/order.
-              Justeras i <span className="font-mono">src/lib/margin.ts</span>.
+              Schabloner: plagg {pct((settings?.costs ?? COST).garmentOfRetail)} av retail ex. moms · film {(settings?.costs ?? COST).filmPerCm2} kr/cm² ·
+              pulver/bläck {(settings?.costs ?? COST).consumablePerPrint} kr/plagg · frakt {(settings?.costs ?? COST).shippingPerOrder} kr/order.
+              Justeras under <span className="font-mono">Inställningar → Kostnader</span>.
             </p>
           </>
         )}

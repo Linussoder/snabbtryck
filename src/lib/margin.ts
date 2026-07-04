@@ -1,16 +1,11 @@
 import { Order } from "./account";
 import { getGarment } from "./garments";
-import { computePrice, VAT_RATE } from "./pricing";
-import { computePrintArea } from "./store";
+import { computePrice } from "./pricing";
+import { computePrintArea } from "./print";
+import { DEFAULT_COSTS, DEFAULT_PRICING, type CostConfig, type PricingConfig } from "./settings";
 
-// Kostnadsmodell för marginal-dashboarden. Schabloner (ex. moms) — justera
-// mot verkligt inköp/förbrukning när data finns.
-export const COST = {
-  garmentOfRetail: 0.4, // plagg-inköp som andel av retailpris ex. moms
-  filmPerCm2: 0.14, // DTF-film + transfer per cm² (ex. moms)
-  consumablePerPrint: 4, // pulver/bläck-schablon per tryckt plagg
-  shippingPerOrder: 42, // fraktkostnad per order (ex. moms)
-};
+// Bakåtkompatibel default (= schablonerna). Redigerbara via admin → app_settings 'costs'.
+export const COST = DEFAULT_COSTS;
 
 export interface LineMargin {
   garmentName: string;
@@ -33,17 +28,21 @@ export interface OrderMargin {
   lines: LineMargin[];
 }
 
-export function computeOrderMargin(order: Order): OrderMargin {
+export function computeOrderMargin(
+  order: Order,
+  costs: CostConfig = DEFAULT_COSTS,
+  pricing: PricingConfig = DEFAULT_PRICING
+): OrderMargin {
   const design = order.design;
   const lines: LineMargin[] = order.lines.map((l) => {
     const g = getGarment(l.garmentId);
     const area = computePrintArea(design.elements, g);
-    const price = computePrice(g, area, l.qty);
+    const price = computePrice(g, area, l.qty, pricing);
     const revenue = price.subtotalExclVat;
-    const retailExVat = g.basePrice / (1 + VAT_RATE);
-    const garmentCost = retailExVat * COST.garmentOfRetail * l.qty;
-    const filmCost = area * COST.filmPerCm2 * l.qty;
-    const consumableCost = area > 0 ? COST.consumablePerPrint * l.qty : 0;
+    const retailExVat = g.basePrice / (1 + pricing.vatRate);
+    const garmentCost = retailExVat * costs.garmentOfRetail * l.qty;
+    const filmCost = area * costs.filmPerCm2 * l.qty;
+    const consumableCost = area > 0 ? costs.consumablePerPrint * l.qty : 0;
     return {
       garmentName: g.name,
       qty: l.qty,
@@ -59,7 +58,7 @@ export function computeOrderMargin(order: Order): OrderMargin {
   const garmentCost = sum((l) => l.garmentCost);
   const filmCost = sum((l) => l.filmCost);
   const consumableCost = sum((l) => l.consumableCost);
-  const shippingCost = COST.shippingPerOrder;
+  const shippingCost = costs.shippingPerOrder;
   const totalCost = garmentCost + filmCost + consumableCost + shippingCost;
   const profit = revenue - totalCost;
   const marginPct = revenue > 0 ? profit / revenue : 0;

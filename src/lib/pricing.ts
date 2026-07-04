@@ -1,32 +1,22 @@
 import { Garment } from "./garments";
+import { DEFAULT_PRICING, PricingConfig, DiscountTier } from "./settings";
 
-export const VAT_RATE = 0.25; // 25 % moms
-export const PRICE_PER_CM2 = 0.85; // tryckkostnad per cm² (inkl. moms)
-export const PRINT_SETUP_MIN = 20; // minsta tryckkostnad per plagg om något tryck finns
+export type { DiscountTier };
 
-export interface DiscountTier {
-  min: number;
-  pct: number; // rabatt på pris per plagg
-}
+// Bakåtkompatibla konstanter (= defaults). Används som fallback + i admin-UI.
+export const VAT_RATE = DEFAULT_PRICING.vatRate; // 25 % moms
+export const PRICE_PER_CM2 = DEFAULT_PRICING.pricePerCm2; // tryckkostnad per cm² (inkl. moms)
+export const PRINT_SETUP_MIN = DEFAULT_PRICING.printSetupMin; // minsta tryckkostnad per plagg
+export const DISCOUNT_TIERS: DiscountTier[] = DEFAULT_PRICING.discountTiers;
 
-// Mängdrabatt-trappa
-export const DISCOUNT_TIERS: DiscountTier[] = [
-  { min: 1, pct: 0 },
-  { min: 5, pct: 0.1 },
-  { min: 10, pct: 0.18 },
-  { min: 25, pct: 0.25 },
-  { min: 50, pct: 0.32 },
-  { min: 100, pct: 0.4 },
-];
-
-export function tierForQty(qty: number): DiscountTier {
-  let t = DISCOUNT_TIERS[0];
-  for (const tier of DISCOUNT_TIERS) if (qty >= tier.min) t = tier;
+export function tierForQty(qty: number, tiers: DiscountTier[] = DISCOUNT_TIERS): DiscountTier {
+  let t = tiers[0];
+  for (const tier of tiers) if (qty >= tier.min) t = tier;
   return t;
 }
 
-export function nextTier(qty: number): DiscountTier | null {
-  return DISCOUNT_TIERS.find((t) => t.min > qty) ?? null;
+export function nextTier(qty: number, tiers: DiscountTier[] = DISCOUNT_TIERS): DiscountTier | null {
+  return tiers.find((t) => t.min > qty) ?? null;
 }
 
 export interface PriceBreakdown {
@@ -44,20 +34,22 @@ export interface PriceBreakdown {
 
 /**
  * @param printAreaCm2 total tryckyta i cm² för ETT plagg (summa av alla element)
+ * @param cfg prissättningskonfiguration (default = kod-defaults; DB-config skickas in där den finns)
  */
 export function computePrice(
   garment: Garment,
   printAreaCm2: number,
-  qty: number
+  qty: number,
+  cfg: PricingConfig = DEFAULT_PRICING
 ): PriceBreakdown {
   const base = garment.basePrice;
-  const rawPrint = printAreaCm2 * PRICE_PER_CM2;
-  const printCost = printAreaCm2 > 0 ? Math.max(rawPrint, PRINT_SETUP_MIN) : 0;
+  const rawPrint = printAreaCm2 * cfg.pricePerCm2;
+  const printCost = printAreaCm2 > 0 ? Math.max(rawPrint, cfg.printSetupMin) : 0;
   const unitBeforeDiscount = base + printCost;
-  const tier = tierForQty(qty);
+  const tier = tierForQty(qty, cfg.discountTiers);
   const unitAfterDiscount = unitBeforeDiscount * (1 - tier.pct);
   const subtotalInclVat = unitAfterDiscount * qty;
-  const subtotalExclVat = subtotalInclVat / (1 + VAT_RATE);
+  const subtotalExclVat = subtotalInclVat / (1 + cfg.vatRate);
   const vat = subtotalInclVat - subtotalExclVat;
   return {
     base,

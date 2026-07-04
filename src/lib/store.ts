@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { Garment, getGarment, ViewKey } from "./garments";
 import { computePrice, PriceBreakdown } from "./pricing";
 import { computePrintArea } from "./print";
+import { useSettings } from "@/components/settings/SettingsProvider";
 
 // Re-export så befintliga imports från "@/lib/store" fortsätter fungera.
 export { computePrintArea };
@@ -111,10 +112,11 @@ export function usePrice(): PriceBreakdown {
   const garmentId = useEditor((s) => s.garmentId);
   const elements = useEditor((s) => s.elements);
   const qty = useEditor((s) => s.qty);
+  const { pricing } = useSettings();
   return useMemo(() => {
     const g = getGarment(garmentId);
-    return computePrice(g, computePrintArea(elements, g), qty);
-  }, [garmentId, elements, qty]);
+    return computePrice(g, computePrintArea(elements, g), qty, pricing);
+  }, [garmentId, elements, qty, pricing]);
 }
 
 export function usePrintArea(): number {
