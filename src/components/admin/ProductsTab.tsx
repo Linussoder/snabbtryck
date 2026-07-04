@@ -8,6 +8,7 @@ import type { ProductsConfig, StockStatus } from "@/lib/settings";
 const STOCK: { id: StockStatus; label: string }[] = [
   { id: "in_stock", label: "I lager" },
   { id: "low", label: "Få kvar" },
+  { id: "backorder", label: "Beställningsvara 10–15 dagar" },
   { id: "out", label: "Slut" },
 ];
 

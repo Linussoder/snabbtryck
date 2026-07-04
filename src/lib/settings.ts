@@ -82,7 +82,8 @@ export function shippingCostFor(cfg: ShippingConfig, inclVatSum: number, methodI
 }
 
 /* ---------------- Produkter (override per plagg) ---------------- */
-export type StockStatus = "in_stock" | "low" | "out";
+// backorder = beställningsvara (beställningsbar, längre leverans).
+export type StockStatus = "in_stock" | "low" | "out" | "backorder";
 export interface ProductOverride {
   basePrice?: number;
   active?: boolean; // false = dold i butiken

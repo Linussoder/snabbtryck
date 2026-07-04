@@ -51,8 +51,10 @@ export function GarmentPicker() {
                       />
                     </div>
                     {stock !== "in_stock" && (
-                      <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 spec text-[8px] uppercase ${soldOut ? "bg-ink text-paper" : "bg-warn/90 text-ink"}`}>
-                        {soldOut ? "Slut" : "Få kvar"}
+                      <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 spec text-[8px] uppercase ${
+                        stock === "out" ? "bg-ink text-paper" : stock === "backorder" ? "bg-cyan text-white" : "bg-warn/90 text-ink"
+                      }`}>
+                        {stock === "out" ? "Slut" : stock === "backorder" ? "10–15 dgr" : "Få kvar"}
                       </span>
                     )}
                     <div className="px-1 py-1.5">
