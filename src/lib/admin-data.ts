@@ -2,7 +2,10 @@
 
 import { createClient } from "./supabase/client";
 import type { Order } from "./account";
-import { mergePricing, mergeShipping, mergeCosts, type PricingConfig, type ShippingConfig, type CostConfig } from "./settings";
+import {
+  mergePricing, mergeShipping, mergeCosts, mergeProducts, mergeProductImages,
+  type PricingConfig, type ShippingConfig, type CostConfig, type ProductsConfig, type ProductImagesConfig,
+} from "./settings";
 
 export interface AdminOrder extends Order {
   user_id: string | null;
@@ -56,6 +59,8 @@ export interface AllSettings {
   pricing: PricingConfig;
   shipping: ShippingConfig;
   costs: CostConfig;
+  products: ProductsConfig;
+  productImages: ProductImagesConfig;
 }
 
 export async function fetchSettings(): Promise<AllSettings> {
@@ -66,6 +71,8 @@ export async function fetchSettings(): Promise<AllSettings> {
     pricing: mergePricing(map.pricing),
     shipping: mergeShipping(map.shipping),
     costs: mergeCosts(map.costs),
+    products: mergeProducts(map.products),
+    productImages: mergeProductImages(map.productImages),
   };
 }
 

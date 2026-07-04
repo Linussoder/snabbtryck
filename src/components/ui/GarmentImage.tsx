@@ -1,6 +1,9 @@
+"use client";
+
 import { GARMENT_IMAGES, GarmentImg } from "@/lib/garmentImages";
 import { GarmentShape as Shape, ViewKey } from "@/lib/garments";
 import { GarmentShape as GarmentSvg } from "./GarmentShape";
+import { useSettings } from "@/components/settings/SettingsProvider";
 
 // Modellfria Printful-produktbilder (färgsatta ghost/flat-mallar), fram + bak,
 // med närmaste-färg-matchning. Ärm-vyn faller tillbaka på SVG-silhuetten.
@@ -43,9 +46,11 @@ export function GarmentImage({
   fit?: "cover" | "contain";
   alt?: string;
 }) {
+  const { productImages } = useSettings();
+  const override = view === "back" ? productImages[shape]?.back : view === "front" ? productImages[shape]?.front : undefined;
   const entry = GARMENT_IMAGES[shape];
   const list = entry ? (view === "back" ? entry.back : view === "front" ? entry.front : undefined) : undefined;
-  const src = nearestSrc(list, color);
+  const src = override ?? nearestSrc(list, color);
 
   if (src) {
     return (

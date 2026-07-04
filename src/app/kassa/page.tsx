@@ -17,7 +17,7 @@ import {
 } from "@/lib/account";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSettings } from "@/components/settings/SettingsProvider";
-import { shippingCostFor } from "@/lib/settings";
+import { shippingCostFor, withOverride, isGarmentActive } from "@/lib/settings";
 import { GARMENTS, getGarment } from "@/lib/garments";
 import { computePrice } from "@/lib/pricing";
 import { computePrintArea, uid } from "@/lib/store";
@@ -33,7 +33,7 @@ export default function Kassa() {
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0); // 0 leverans, 1 betalning
   const { user, profile, loading } = useAuth();
-  const { pricing, shipping: shipCfg } = useSettings();
+  const { pricing, shipping: shipCfg, products } = useSettings();
   const business = profile?.business ?? false;
   const [pay, setPay] = useState<Pay>("swish");
   const [placing, setPlacing] = useState(false);
@@ -94,11 +94,11 @@ export default function Kassa() {
     );
   }
 
-  const g = getGarment(cart.design.garmentId);
+  const g = withOverride(getGarment(cart.design.garmentId), products);
   const price = computePrice(g, computePrintArea(cart.design.elements, g), cart.qty, pricing);
 
   const addonRows = addons.map((a) => {
-    const ag = getGarment(a.garmentId);
+    const ag = withOverride(getGarment(a.garmentId), products);
     const ap = computePrice(ag, computePrintArea(cart.design.elements, ag), a.qty, pricing);
     return { a, ag, ap };
   });
@@ -336,9 +336,9 @@ function Upsell({
   onAdd: (a: CartAddon) => void;
 }) {
   // Matchande plagg — kundens design applicerad, ren marginal.
-  const { pricing } = useSettings();
+  const { pricing, products } = useSettings();
   const suggestions = GARMENTS.filter(
-    (g) => g.id !== design.garmentId && !addons.some((a) => a.garmentId === g.id)
+    (g) => g.id !== design.garmentId && !addons.some((a) => a.garmentId === g.id) && isGarmentActive(products, g.id)
   )
     .filter((g) => ["cap", "bag", "tshirt", "hoodie"].includes(g.id))
     .slice(0, 2);
@@ -354,8 +354,9 @@ function Upsell({
       <p className="mb-4 text-sm text-muted">Samma tryck, ett klick — perfekt komplement.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {suggestions.map((g) => {
+          const go = withOverride(g, products);
           const applied = { ...design, garmentId: g.id, colorIndex: 0 };
-          const p = computePrice(g, computePrintArea(design.elements, g), 1, pricing);
+          const p = computePrice(go, computePrintArea(design.elements, go), 1, pricing);
           const shown = business ? p.subtotalExclVat : p.subtotalInclVat;
           return (
             <div key={g.id} className="card flex items-center gap-3 p-3">

@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getGarment } from "@/lib/garments";
 import { computePrice } from "@/lib/pricing";
 import { computePrintArea } from "@/lib/print";
-import { getPricing, getShipping } from "@/lib/settings-server";
-import { shippingCostFor } from "@/lib/settings";
+import { getPricing, getShipping, getProducts } from "@/lib/settings-server";
+import { shippingCostFor, withOverride, garmentStock } from "@/lib/settings";
 import type { DesignSnapshot, DesignElement } from "@/lib/store";
 import type { OrderLine } from "@/lib/account";
 
@@ -58,10 +58,22 @@ export async function POST(req: Request) {
   // ---- Server-side prisberäkning (config från DB, speglar kassan) ----
   const pricing = await getPricing();
   const shipCfg = await getShipping();
+  const products = await getProducts();
+
+  // Lager-guard: går inte att beställa slutsålt plagg.
+  for (const line of lines) {
+    if (garmentStock(products, line.garmentId) === "out") {
+      return NextResponse.json(
+        { ok: false, error: `${getGarment(line.garmentId).name} är slut i lager.` },
+        { status: 409 }
+      );
+    }
+  }
+
   let itemsSum = 0;
   let inclVatSum = 0;
   for (const line of lines) {
-    const g = getGarment(line.garmentId);
+    const g = withOverride(getGarment(line.garmentId), products);
     const area = computePrintArea(design.elements, g);
     const p = computePrice(g, area, Math.max(1, Math.round(line.qty || 1)), pricing);
     itemsSum += business ? p.subtotalExclVat : p.subtotalInclVat;

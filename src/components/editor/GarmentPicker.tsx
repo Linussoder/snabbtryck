@@ -4,6 +4,8 @@ import { useEditor } from "@/lib/store";
 import { GARMENTS, CATEGORIES, VIEW_LABEL } from "@/lib/garments";
 import { kr } from "@/lib/format";
 import { GarmentImage } from "@/components/ui/GarmentImage";
+import { useSettings } from "@/components/settings/SettingsProvider";
+import { withOverride, isGarmentActive, garmentStock } from "@/lib/settings";
 
 export function GarmentPicker() {
   const garment = useEditor((s) => s.garment());
@@ -14,6 +16,7 @@ export function GarmentPicker() {
   const setColor = useEditor((s) => s.setColor);
   const setSize = useEditor((s) => s.setSize);
   const setView = useEditor((s) => s.setView);
+  const { products } = useSettings();
   const color = garment.colors[colorIndex] ?? garment.colors[0];
 
   return (
@@ -25,15 +28,18 @@ export function GarmentPicker() {
           <div key={cat} className="mb-3">
             <p className="spec text-[10px] text-muted-2 mb-1.5">{cat}</p>
             <div className="grid grid-cols-3 gap-2">
-              {GARMENTS.filter((g) => g.category === cat).map((g) => {
+              {GARMENTS.filter((g) => g.category === cat && isGarmentActive(products, g.id)).map((g) => {
                 const active = g.id === garment.id;
+                const stock = garmentStock(products, g.id);
+                const soldOut = stock === "out";
                 return (
                   <button
                     key={g.id}
-                    onClick={() => setGarment(g.id)}
-                    className={`group overflow-hidden rounded-[10px] border transition-colors ${
+                    onClick={() => !soldOut && setGarment(g.id)}
+                    disabled={soldOut}
+                    className={`group relative overflow-hidden rounded-[10px] border transition-colors ${
                       active ? "border-ink ring-1 ring-ink" : "border-line hover:border-muted"
-                    }`}
+                    } ${soldOut ? "cursor-not-allowed opacity-55" : ""}`}
                   >
                     <div className="aspect-square w-full overflow-hidden bg-white">
                       <GarmentImage
@@ -44,12 +50,17 @@ export function GarmentPicker() {
                         alt={g.name}
                       />
                     </div>
+                    {stock !== "in_stock" && (
+                      <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 spec text-[8px] uppercase ${soldOut ? "bg-ink text-paper" : "bg-warn/90 text-ink"}`}>
+                        {soldOut ? "Slut" : "Få kvar"}
+                      </span>
+                    )}
                     <div className="px-1 py-1.5">
                       <span className="block text-center font-head text-[11px] leading-tight">
                         {g.name}
                       </span>
                       <span className="spec block text-center text-[9px] text-muted">
-                        {kr(g.basePrice)}
+                        {kr(withOverride(g, products).basePrice)}
                       </span>
                     </div>
                   </button>

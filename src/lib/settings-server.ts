@@ -4,9 +4,11 @@ import {
   mergePricing,
   mergeShipping,
   mergeCosts,
+  mergeProducts,
   type PricingConfig,
   type ShippingConfig,
   type CostConfig,
+  type ProductsConfig,
 } from "./settings";
 
 async function getValue(key: string): Promise<unknown> {
@@ -23,4 +25,7 @@ export async function getShipping(): Promise<ShippingConfig> {
 }
 export async function getCosts(): Promise<CostConfig> {
   return mergeCosts((await getValue("costs")) as Partial<CostConfig>);
+}
+export async function getProducts(): Promise<ProductsConfig> {
+  return mergeProducts((await getValue("products")) as ProductsConfig);
 }

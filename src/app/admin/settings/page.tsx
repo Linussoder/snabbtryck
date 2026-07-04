@@ -2,22 +2,30 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchSettings, saveSetting, fetchProfiles, type AllSettings, type AdminProfile } from "@/lib/admin-data";
+import { fetchSettings, saveSetting, fetchProfiles, type AdminProfile } from "@/lib/admin-data";
 import { useToast } from "@/components/ui/Toast";
+import { ProductsTab } from "@/components/admin/ProductsTab";
+import { ImagesTab } from "@/components/admin/ImagesTab";
 import {
   DEFAULT_PRICING,
   DEFAULT_COSTS,
   DEFAULT_SHIPPING,
+  DEFAULT_PRODUCTS,
+  DEFAULT_PRODUCT_IMAGES,
   type PricingConfig,
   type CostConfig,
   type ShippingConfig,
+  type ProductsConfig,
+  type ProductImagesConfig,
 } from "@/lib/settings";
 
-type Tab = "priser" | "kostnader" | "leverans" | "admins";
+type Tab = "priser" | "kostnader" | "leverans" | "produkter" | "bilder" | "admins";
 const TABS: { id: Tab; label: string }[] = [
   { id: "priser", label: "Priser" },
   { id: "kostnader", label: "Kostnader" },
   { id: "leverans", label: "Leverans" },
+  { id: "produkter", label: "Produkter" },
+  { id: "bilder", label: "Bilder" },
   { id: "admins", label: "Admins" },
 ];
 
@@ -27,6 +35,8 @@ export default function AdminSettings() {
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
   const [costs, setCosts] = useState<CostConfig>(DEFAULT_COSTS);
   const [shipping, setShipping] = useState<ShippingConfig>(DEFAULT_SHIPPING);
+  const [products, setProducts] = useState<ProductsConfig>(DEFAULT_PRODUCTS);
+  const [productImages, setProductImages] = useState<ProductImagesConfig>(DEFAULT_PRODUCT_IMAGES);
   const [admins, setAdmins] = useState<AdminProfile[]>([]);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -36,6 +46,8 @@ export default function AdminSettings() {
       setPricing(s.pricing);
       setCosts(s.costs);
       setShipping(s.shipping);
+      setProducts(s.products);
+      setProductImages(s.productImages);
       setAdmins(p.filter((x) => x.role === "admin"));
       setReady(true);
     });
@@ -139,6 +151,14 @@ export default function AdminSettings() {
             </div>
           </div>
         </Section>
+      )}
+
+      {tab === "produkter" && (
+        <ProductsTab initial={products} saving={saving} onSave={(v) => { setProducts(v); save("products", v); }} />
+      )}
+
+      {tab === "bilder" && (
+        <ImagesTab initial={productImages} saving={saving} onSave={(v) => { setProductImages(v); save("productImages", v); }} />
       )}
 
       {tab === "admins" && (

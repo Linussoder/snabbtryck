@@ -1,6 +1,7 @@
 // Delade typer + kod-defaults för redigerbar sajtkonfiguration.
 // Defaults = exakt nuvarande hårdkodade värden → sajten funkar identiskt även
 // om DB-config saknas. Ren modul (ingen klient/server-kod) → importeras överallt.
+import type { Garment } from "./garments";
 
 export interface DiscountTier {
   min: number;
@@ -78,4 +79,39 @@ export function shippingCostFor(cfg: ShippingConfig, inclVatSum: number, methodI
   if (inclVatSum >= cfg.freeThreshold) return 0;
   const m = cfg.methods.find((x) => x.id === methodId) ?? cfg.methods[0];
   return m?.price ?? 0;
+}
+
+/* ---------------- Produkter (override per plagg) ---------------- */
+export type StockStatus = "in_stock" | "low" | "out";
+export interface ProductOverride {
+  basePrice?: number;
+  active?: boolean; // false = dold i butiken
+  stockStatus?: StockStatus;
+}
+export type ProductsConfig = Record<string, ProductOverride>;
+export const DEFAULT_PRODUCTS: ProductsConfig = {};
+export function mergeProducts(v: ProductsConfig | null | undefined): ProductsConfig {
+  return { ...(v ?? {}) };
+}
+/** Plagg med ev. override-pris applicerat (för prisberäkning). */
+export function withOverride(g: Garment, products: ProductsConfig): Garment {
+  const bp = products[g.id]?.basePrice;
+  return bp != null ? { ...g, basePrice: bp } : g;
+}
+export function isGarmentActive(products: ProductsConfig, id: string): boolean {
+  return products[id]?.active !== false;
+}
+export function garmentStock(products: ProductsConfig, id: string): StockStatus {
+  return products[id]?.stockStatus ?? "in_stock";
+}
+
+/* ---------------- Produktbilder (override per plagg-shape) ---------------- */
+export interface ProductImageOverride {
+  front?: string;
+  back?: string;
+}
+export type ProductImagesConfig = Record<string, ProductImageOverride>;
+export const DEFAULT_PRODUCT_IMAGES: ProductImagesConfig = {};
+export function mergeProductImages(v: ProductImagesConfig | null | undefined): ProductImagesConfig {
+  return { ...(v ?? {}) };
 }
