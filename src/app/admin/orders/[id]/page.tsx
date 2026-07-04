@@ -60,6 +60,10 @@ export default function AdminOrderDetail() {
       return;
     }
     setOrder({ ...order, ...fields });
+    // Kund-mejl vid statusbyte (no-op utan RESEND_API_KEY).
+    if ("status" in fields) {
+      fetch("/api/notify-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id }) }).catch(() => {});
+    }
     push({ kind: "success", title: okMsg });
   }
 

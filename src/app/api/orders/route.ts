@@ -5,6 +5,7 @@ import { computePrice } from "@/lib/pricing";
 import { computePrintArea } from "@/lib/print";
 import { getPricing, getShipping, getProducts } from "@/lib/settings-server";
 import { shippingCostFor, withOverride, garmentStock } from "@/lib/settings";
+import { sendEmail, orderConfirmationEmail } from "@/lib/email-server";
 import type { DesignSnapshot, DesignElement } from "@/lib/store";
 import type { OrderLine } from "@/lib/account";
 
@@ -13,6 +14,8 @@ interface OrderBody {
   lines: OrderLine[];
   contact: Record<string, string>;
   shipping: { method?: string };
+  paymentMethod?: string;
+  discountCode?: string;
 }
 
 function genRef(): string {
@@ -80,7 +83,23 @@ export async function POST(req: Request) {
     inclVatSum += p.subtotalInclVat;
   }
   const shippingCost = shippingCostFor(shipCfg, inclVatSum, shipping?.method);
-  const total = Math.round(itemsSum + shippingCost);
+
+  // ---- Rabattkod (server-validerad via SECURITY DEFINER-funktion) ----
+  let discountAmount = 0;
+  let appliedCode: string | null = null;
+  if (body.discountCode) {
+    const { data: d } = await supabase.rpc("get_discount", { p_code: body.discountCode });
+    const code = Array.isArray(d) ? d[0] : d;
+    if (code && itemsSum >= (code.min_order ?? 0)) {
+      if (code.type === "percent") discountAmount = itemsSum * (Number(code.value) / 100);
+      else if (code.type === "fixed") discountAmount = Number(code.value);
+      else if (code.type === "free_shipping") discountAmount = shippingCost;
+      discountAmount = Math.min(discountAmount, itemsSum + shippingCost);
+      appliedCode = code.code;
+    }
+  }
+
+  const total = Math.round(itemsSum + shippingCost - discountAmount);
 
   const id = genId();
   const ref = genRef();
@@ -97,6 +116,9 @@ export async function POST(req: Request) {
     design,
     lines,
     print_files: [],
+    payment_method: body.paymentMethod ?? null,
+    discount_code: appliedCode,
+    discount_amount: Math.round(discountAmount),
   });
 
   if (insertErr) {
@@ -124,6 +146,28 @@ export async function POST(req: Request) {
   }
   if (printFiles.length) {
     await supabase.from("orders").update({ print_files: printFiles }).eq("id", id);
+  }
+
+  // Räkna upp rabattkodens användning (efter lyckad order).
+  if (appliedCode) await supabase.rpc("redeem_discount", { p_code: appliedCode });
+
+  // Bekräftelsemejl (no-op utan RESEND_API_KEY).
+  if (contact?.email) {
+    const mail = orderConfirmationEmail({ ref, total, firstName: contact.firstName });
+    await sendEmail({ to: contact.email, subject: mail.subject, html: mail.html });
+  }
+
+  // Telefon-notis via ntfy (no-op utan NTFY_TOPIC).
+  if (process.env.NTFY_TOPIC) {
+    try {
+      await fetch(`https://ntfy.sh/${process.env.NTFY_TOPIC}`, {
+        method: "POST",
+        headers: { Title: `Ny order ${ref}`, Priority: "high", Tags: "package,moneybag" },
+        body: `${total} kr\n${contact?.email ?? ""}`,
+      });
+    } catch {
+      /* notis är best-effort */
+    }
   }
 
   return NextResponse.json({ ok: true, id, ref });

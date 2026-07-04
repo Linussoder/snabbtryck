@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSettings } from "@/components/settings/SettingsProvider";
 import { shippingCostFor, withOverride, isGarmentActive } from "@/lib/settings";
+import { createClient } from "@/lib/supabase/client";
 import { GARMENTS, getGarment } from "@/lib/garments";
 import { computePrice } from "@/lib/pricing";
 import { computePrintArea, uid } from "@/lib/store";
@@ -49,6 +50,24 @@ export default function Kassa() {
   });
   const setField = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const [discInput, setDiscInput] = useState("");
+  const [discount, setDiscount] = useState<{ code: string; type: string; value: number; min_order: number } | null>(null);
+  const [discMsg, setDiscMsg] = useState<string | null>(null);
+
+  async function applyDiscount() {
+    if (!discInput.trim()) return;
+    const supabase = createClient();
+    const { data } = await supabase.rpc("get_discount", { p_code: discInput.trim() });
+    const c = Array.isArray(data) ? data[0] : data;
+    if (!c) {
+      setDiscount(null);
+      setDiscMsg("Ogiltig eller utgången kod.");
+      return;
+    }
+    setDiscount(c);
+    setDiscMsg(null);
+  }
 
   useEffect(() => {
     const c = getCart();
@@ -109,7 +128,15 @@ export default function Kassa() {
     price.subtotalInclVat + addonRows.reduce((s, r) => s + r.ap.subtotalInclVat, 0);
   const vatSum = price.vat + addonRows.reduce((s, r) => s + r.ap.vat, 0);
   const shipping = shippingCostFor(shipCfg, inclVatSum, shipMethod);
-  const grand = itemsSum + shipping;
+
+  let discountAmount = 0;
+  if (discount && itemsSum >= discount.min_order) {
+    if (discount.type === "percent") discountAmount = itemsSum * (discount.value / 100);
+    else if (discount.type === "fixed") discountAmount = discount.value;
+    else if (discount.type === "free_shipping") discountAmount = shipping;
+    discountAmount = Math.min(discountAmount, itemsSum + shipping);
+  }
+  const grand = itemsSum + shipping - discountAmount;
 
   async function placeOrder() {
     if (!cart || placing) return;
@@ -141,6 +168,8 @@ export default function Kassa() {
           lines,
           contact: form,
           shipping: { method: shipMethod },
+          paymentMethod: pay,
+          discountCode: discount?.code ?? null,
         }),
       });
       const data = await res.json();
@@ -303,9 +332,31 @@ export default function Kassa() {
                   </button>
                 </div>
               ))}
+              {/* Rabattkod */}
+              <div className="border-b border-line px-4 py-3">
+                {discount ? (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="spec text-signal">✓ {discount.code} tillämpad</span>
+                    <button onClick={() => { setDiscount(null); setDiscInput(""); }} className="spec text-[11px] text-muted hover:text-bad">ta bort</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      value={discInput}
+                      onChange={(e) => setDiscInput(e.target.value.toUpperCase())}
+                      placeholder="Rabattkod"
+                      className="field flex-1 text-sm"
+                    />
+                    <button onClick={applyDiscount} className="btn btn-outline btn-sm">Använd</button>
+                  </div>
+                )}
+                {discMsg && <p className="spec mt-1 text-[11px] text-bad">{discMsg}</p>}
+              </div>
+
               <div className="space-y-1.5 p-4 text-sm">
                 <Sum label={business ? "Delsumma exkl. moms" : "Delsumma"} value={kr(itemsSum)} />
                 <Sum label="Frakt" value={shipping === 0 ? "Fri" : kr(shipping)} />
+                {discountAmount > 0 && discount && <Sum label={`Rabatt (${discount.code})`} value={`−${kr(discountAmount)}`} />}
                 {!business && <Sum label="varav moms" value={kr(vatSum)} muted />}
                 {business && <Sum label="Moms tillkommer (25%)" value={kr(vatSum)} muted />}
               </div>

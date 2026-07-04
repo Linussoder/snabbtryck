@@ -84,3 +84,31 @@ export async function saveSetting(key: string, value: unknown): Promise<{ error:
   return { error: error?.message ?? null };
 }
 
+/* ---------------- Rabattkoder ---------------- */
+export interface DiscountCode {
+  code: string;
+  type: "percent" | "fixed" | "free_shipping";
+  value: number;
+  active: boolean;
+  min_order: number;
+  max_uses: number | null;
+  uses: number;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export async function fetchDiscounts(): Promise<DiscountCode[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("discount_codes").select("*").order("created_at", { ascending: false });
+  return (data ?? []) as DiscountCode[];
+}
+export async function saveDiscount(d: Partial<DiscountCode> & { code: string }): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("discount_codes").upsert({ ...d, code: d.code.toUpperCase() });
+  return { error: error?.message ?? null };
+}
+export async function deleteDiscount(code: string): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("discount_codes").delete().eq("code", code);
+}
+

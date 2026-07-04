@@ -44,6 +44,8 @@ export default function ProductionQueue() {
       return;
     }
     setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: next } : x)));
+    // Kund-mejl om statusbyte (no-op utan RESEND_API_KEY).
+    fetch("/api/notify-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: o.id }) }).catch(() => {});
     push({ kind: "success", title: `${o.ref} → ${next}` });
   }
 
