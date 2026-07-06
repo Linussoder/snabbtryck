@@ -9,10 +9,17 @@ import { useToast } from "@/components/ui/Toast";
 import { StatusBadge } from "@/components/admin/ui";
 import { getGarment } from "@/lib/garments";
 import { kr } from "@/lib/format";
-import type { AdminOrder } from "@/lib/admin-data";
+import { VAT_RATE } from "@/lib/pricing";
+import type { AdminOrder, OrderMessage } from "@/lib/admin-data";
 import type { OrderStatus } from "@/lib/account";
 
 const STATUSES: OrderStatus[] = ["Mottagen", "I tryck", "Skickad"];
+const RETURN_STATES: { id: AdminOrder["return_status"]; label: string }[] = [
+  { id: "none", label: "Ingen" },
+  { id: "requested", label: "Begärd" },
+  { id: "approved", label: "Godkänd" },
+  { id: "refunded", label: "Återbetald" },
+];
 
 export default function AdminOrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,9 +30,14 @@ export default function AdminOrderDetail() {
   const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
   const [notes, setNotes] = useState("");
   const [tracking, setTracking] = useState("");
+  const [messages, setMessages] = useState<OrderMessage[]>([]);
+  const [msgInput, setMsgInput] = useState("");
+  const [sendingMsg, setSendingMsg] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
+    supabase.from("order_messages").select("*").eq("order_id", id).order("created_at", { ascending: true })
+      .then(({ data }) => setMessages((data ?? []) as OrderMessage[]));
     supabase
       .from("orders")
       .select("*")
@@ -95,6 +107,57 @@ export default function AdminOrderDetail() {
     w.print();
   }
 
+  function printInvoice() {
+    if (!order) return;
+    const c = order.contact ?? {};
+    const gross = order.business ? Math.round(order.total * (1 + VAT_RATE)) : order.total;
+    const net = Math.round(gross / (1 + VAT_RATE));
+    const vat = gross - net;
+    const rows = order.lines
+      .map((l) => {
+        const g = getGarment(l.garmentId);
+        return `<tr><td>${g.name} · ${g.colors[l.colorIndex]?.name ?? ""} · ${l.size}</td><td style="text-align:right">${l.qty} st</td></tr>`;
+      })
+      .join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Faktura ${order.ref}</title>
+      <style>body{font-family:system-ui,sans-serif;padding:40px;color:#111;font-size:14px}h1{margin:0}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{padding:8px 4px;border-bottom:1px solid #ddd;text-align:left}.muted{color:#666;font-size:12px}.r{text-align:right}.sum td{border:0;padding:3px 4px}</style>
+      </head><body>
+      <div style="display:flex;justify-content:space-between"><div><h1>FAKTURA</h1><p class="muted">Snabbtryck · snabbtryck.se</p></div>
+      <div class="r"><p class="muted">Fakturanr ${order.ref}<br>${new Date(order.created_at).toLocaleDateString("sv-SE")}</p></div></div>
+      <p><strong>${[c.firstName, c.lastName].filter(Boolean).join(" ")}</strong>${c.company ? "<br>" + c.company : ""}<br>${c.address ?? ""}<br>${[c.zip, c.city].filter(Boolean).join(" ")}<br>${c.email ?? ""}</p>
+      <table><thead><tr><th>Beskrivning</th><th class="r">Antal</th></tr></thead><tbody>${rows}</tbody></table>
+      <table class="sum" style="margin-top:16px;max-width:280px;margin-left:auto">
+        <tr><td>Netto</td><td class="r">${kr(net)}</td></tr>
+        <tr><td>Moms (${Math.round(VAT_RATE * 100)}%)</td><td class="r">${kr(vat)}</td></tr>
+        ${order.discount_amount ? `<tr><td>Rabatt ${order.discount_code ?? ""}</td><td class="r">−${kr(order.discount_amount)}</td></tr>` : ""}
+        <tr><td style="font-weight:700;font-size:16px">Att betala</td><td class="r" style="font-weight:700;font-size:16px">${kr(gross)}</td></tr>
+      </table>
+      <p class="muted" style="margin-top:24px">${order.business ? "Betalningsvillkor 30 dagar." : "Betald vid beställning."} Moms ingår enligt ovan.</p>
+      </body></html>`;
+    const w = window.open("", "_blank", "width=820,height=900");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  async function sendMessage() {
+    if (!order || !msgInput.trim() || sendingMsg) return;
+    setSendingMsg(true);
+    const res = await fetch("/api/order-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: order.id, body: msgInput }),
+    });
+    setSendingMsg(false);
+    const d = await res.json().catch(() => ({ ok: false }));
+    if (!d.ok) return push({ kind: "error", title: "Kunde inte skicka" });
+    setMessages((m) => [...m, { id: String(m.length), order_id: order.id, from_admin: true, body: msgInput.trim(), created_at: new Date().toISOString() }]);
+    setMsgInput("");
+    push({ kind: "success", title: "Meddelande skickat", msg: "Kunden mejlas." });
+  }
+
   if (!ready) return <div className="p-8 text-muted">Laddar…</div>;
   if (!order)
     return (
@@ -116,6 +179,7 @@ export default function AdminOrderDetail() {
           <StatusBadge status={order.status} />
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={printInvoice} className="btn btn-outline btn-sm">Faktura</button>
           <button onClick={printPackingSlip} className="btn btn-outline btn-sm">Packsedel</button>
           <span className="spec text-muted">{new Date(order.created_at).toLocaleString("sv-SE")}</span>
         </div>
@@ -198,6 +262,51 @@ export default function AdminOrderDetail() {
             <h2 className="eyebrow mb-2 mt-5">Interna noteringar</h2>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Syns bara internt…" className="field w-full resize-y" />
             <button onClick={() => patch({ notes }, "Notering sparad")} disabled={saving} className="btn btn-outline btn-sm mt-2">Spara notering</button>
+          </section>
+
+          {/* Retur & reklamation */}
+          <section className="card p-5">
+            <h2 className="eyebrow mb-2">Retur / reklamation</h2>
+            <div className="flex flex-wrap gap-2">
+              {RETURN_STATES.map((rs) => (
+                <button
+                  key={rs.id}
+                  onClick={() => patch({ return_status: rs.id }, `Retur: ${rs.label}`)}
+                  disabled={saving}
+                  className={`rounded-full border px-3 py-1 text-sm ${order.return_status === rs.id ? "border-bad bg-bad text-white" : "border-line text-muted hover:border-ink"}`}
+                >
+                  {rs.label}
+                </button>
+              ))}
+            </div>
+            {order.return_status !== "none" && (
+              <div className="mt-3">
+                <textarea
+                  defaultValue={order.return_reason ?? ""}
+                  onBlur={(e) => e.target.value !== (order.return_reason ?? "") && patch({ return_reason: e.target.value }, "Orsak sparad")}
+                  rows={2}
+                  placeholder="Orsak / anteckning…"
+                  className="field w-full resize-y"
+                />
+              </div>
+            )}
+          </section>
+
+          {/* Kundmeddelanden */}
+          <section className="card p-5">
+            <h2 className="eyebrow mb-3">Meddelanden till kund</h2>
+            {messages.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {messages.map((m) => (
+                  <div key={m.id} className="rounded-lg bg-paper-2 p-2.5 text-sm">
+                    <p className="whitespace-pre-wrap">{m.body}</p>
+                    <p className="spec mt-1 text-[10px] text-muted">{new Date(m.created_at).toLocaleString("sv-SE")}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <textarea value={msgInput} onChange={(e) => setMsgInput(e.target.value)} rows={2} placeholder="Skriv till kunden (mejlas)…" className="field w-full resize-y" />
+            <button onClick={sendMessage} disabled={sendingMsg || !msgInput.trim()} className="btn btn-primary btn-sm mt-2">{sendingMsg ? "Skickar…" : "Skicka meddelande"}</button>
           </section>
         </div>
 

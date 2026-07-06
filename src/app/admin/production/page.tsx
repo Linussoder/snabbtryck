@@ -8,6 +8,7 @@ import { DesignThumb } from "@/components/ui/DesignThumb";
 import { StatusBadge } from "@/components/admin/ui";
 import { useToast } from "@/components/ui/Toast";
 import { getGarment } from "@/lib/garments";
+import { buildGangSheets, downloadDataUrl, type GangItem } from "@/lib/gangsheet";
 import type { OrderStatus } from "@/lib/account";
 
 const NEXT: Record<OrderStatus, OrderStatus | null> = {
@@ -29,8 +30,38 @@ export default function ProductionQueue() {
     });
   }, []);
 
+  const [sheeting, setSheeting] = useState(false);
+
   // Aktiva ordrar, äldst först (FIFO).
   const queue = orders.filter((o) => o.status !== "Skickad").sort((a, b) => a.createdAt - b.createdAt);
+
+  async function makeGangSheet() {
+    if (sheeting) return;
+    const items: GangItem[] = [];
+    for (const o of queue) {
+      const g = getGarment(o.design.garmentId);
+      for (const el of o.design.elements) {
+        if (el.type === "image" && typeof el.src === "string") {
+          const wCm = el.w * g.printRefWidthCm;
+          items.push({ src: el.src, wCm, hCm: wCm * el.ar });
+        }
+      }
+    }
+    if (!items.length) {
+      push({ kind: "info", title: "Inga tryckbilder i kön" });
+      return;
+    }
+    setSheeting(true);
+    try {
+      const pages = await buildGangSheets(items);
+      pages.forEach((p, i) => downloadDataUrl(p, `snabbtryck-a3-ark-${i + 1}.png`));
+      push({ kind: "success", title: `${pages.length} A3-ark skapade`, msg: `${items.length} tryck packade` });
+    } catch {
+      push({ kind: "error", title: "Kunde inte skapa ark" });
+    } finally {
+      setSheeting(false);
+    }
+  }
 
   async function advance(o: AdminOrder) {
     const next = NEXT[o.status];
@@ -65,9 +96,16 @@ export default function ProductionQueue() {
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-8">
-      <div className="mb-6">
-        <p className="eyebrow text-muted">Internt · tryckkö</p>
-        <h1 className="display text-3xl sm:text-4xl">Produktion · {queue.length}</h1>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-muted">Internt · tryckkö</p>
+          <h1 className="display text-3xl sm:text-4xl">Produktion · {queue.length}</h1>
+        </div>
+        {queue.length > 0 && (
+          <button onClick={makeGangSheet} disabled={sheeting} className="btn btn-primary btn-sm">
+            {sheeting ? "Packar A3…" : "🖨️ Gör A3-tryckark av kön"}
+          </button>
+        )}
       </div>
 
       {queue.length === 0 ? (

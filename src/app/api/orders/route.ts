@@ -151,6 +151,15 @@ export async function POST(req: Request) {
   // Räkna upp rabattkodens användning (efter lyckad order).
   if (appliedCode) await supabase.rpc("redeem_discount", { p_code: appliedCode });
 
+  // Lager-avdrag per rad (best-effort; bara spårade varianter påverkas).
+  for (const line of lines) {
+    await supabase.rpc("decrement_inventory", {
+      p_garment: line.garmentId,
+      p_size: line.size,
+      p_qty: Math.max(1, Math.round(line.qty || 1)),
+    });
+  }
+
   // Bekräftelsemejl (no-op utan RESEND_API_KEY).
   if (contact?.email) {
     const mail = orderConfirmationEmail({ ref, total, firstName: contact.firstName });

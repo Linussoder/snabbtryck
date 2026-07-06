@@ -16,6 +16,20 @@ export interface AdminOrder extends Order {
   tracking: string | null;
   paid: boolean;
   created_at: string;
+  payment_method: string | null;
+  payment_status: string;
+  discount_code: string | null;
+  discount_amount: number;
+  return_status: "none" | "requested" | "approved" | "refunded";
+  return_reason: string | null;
+}
+
+export interface OrderMessage {
+  id: string;
+  order_id: string;
+  from_admin: boolean;
+  body: string;
+  created_at: string;
 }
 
 export interface AdminProfile {
@@ -53,6 +67,12 @@ export async function fetchLeads(): Promise<Lead[]> {
   const supabase = createClient();
   const { data } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
   return (data ?? []) as Lead[];
+}
+
+export async function fetchAllDesigns(): Promise<{ id: string; name: string; user_id: string }[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("designs").select("id,name,user_id");
+  return (data ?? []) as { id: string; name: string; user_id: string }[];
 }
 
 export interface AllSettings {
@@ -110,5 +130,23 @@ export async function saveDiscount(d: Partial<DiscountCode> & { code: string }):
 export async function deleteDiscount(code: string): Promise<void> {
   const supabase = createClient();
   await supabase.from("discount_codes").delete().eq("code", code);
+}
+
+/* ---------------- Lager (variant-nivå) ---------------- */
+export interface InventoryRow {
+  garment_id: string;
+  size: string;
+  qty: number;
+  low: number;
+}
+export async function fetchInventory(): Promise<InventoryRow[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("inventory").select("garment_id,size,qty,low");
+  return (data ?? []) as InventoryRow[];
+}
+export async function saveInventory(rows: InventoryRow[]): Promise<{ error: string | null }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("inventory").upsert(rows.map((r) => ({ ...r, updated_at: new Date().toISOString() })));
+  return { error: error?.message ?? null };
 }
 
