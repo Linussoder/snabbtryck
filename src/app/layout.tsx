@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anton, Archivo_Black, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SettingsProvider } from "@/components/settings/SettingsProvider";
+import { SITE, organizationLd, websiteLd, jsonLdGraph } from "@/lib/seo";
 
 // Display / logo — tall condensed caps (hero + wordmark)
 const anton = Anton({
@@ -38,19 +39,80 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Snabbtryck — Designa din egen tröja",
-  description:
-    "Ladda upp din logga, placera den på plagget och se priset live per cm² tryckyta. DTF-tryck, inga uppläggsavgifter, från 1 plagg — tryckt och skickat inom 48 timmar.",
+  metadataBase: new URL(SITE.url),
+  title: {
+    default: `${SITE.name} – ${SITE.tagline}`,
+    template: `%s | ${SITE.name}`,
+  },
+  description: SITE.description,
+  applicationName: SITE.name,
+  keywords: [
+    "DTF-tryck",
+    "designa egen tröja",
+    "trycka kläder",
+    "egen t-shirt med tryck",
+    "trycka logga på tröja",
+    "lagtröjor med namn och nummer",
+    "matchtröjor",
+    "föreningskläder",
+    "profilkläder företag",
+    "texttryck kläder",
+    "hoodie med eget tryck",
+    "keps med tryck",
+    "beställa tröjor med tryck",
+  ],
+  authors: [{ name: SITE.name, url: SITE.url }],
+  creator: SITE.name,
+  publisher: SITE.name,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: SITE.locale,
+    url: SITE.url,
+    siteName: SITE.name,
+    title: `${SITE.name} – ${SITE.tagline}`,
+    description: SITE.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE.name} – ${SITE.tagline}`,
+    description: SITE.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  category: "shopping",
+  formatDetection: { telephone: false, email: false, address: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#111114",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="sv">
+    <html lang={SITE.lang}>
       <body
         className={`${anton.variable} ${archivo.variable} ${hanken.variable} ${spaceMono.variable}`}
       >
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: jsonLdGraph([organizationLd(), websiteLd()]),
+          }}
+        />
         <AuthProvider>
           <SettingsProvider>
             <ToastProvider>{children}</ToastProvider>
