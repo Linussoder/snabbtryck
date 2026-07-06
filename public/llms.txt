@@ -1,0 +1,55 @@
+# Snabbtryck
+
+> Snabbtryck är en svensk DTF-tryckplattform där du designar egna kläder direkt i webbläsaren – ladda upp en logga, lägg till text och emoji, placera fritt på plagget och se priset live per cm² tryckyta. Tryckt och skickat inom 48 timmar, från 1 plagg, utan uppläggsavgifter eller minimiantal.
+
+Webbplats: https://www.snabbtryck.se
+Språk: svenska
+Land: Sverige
+
+## Vad Snabbtryck gör
+
+Snabbtryck låter privatpersoner, lag, föreningar och företag skapa egentryckta plagg (t-shirt, hoodie, långärmad, linne, keps, tygväska m.m.) i en webbaserad designstudio. Tekniken är DTF (Direct-to-Film) som ger tryck i full färg på både ljusa och mörka plagg. Man kan även beställa färdiga DTF-tryckark (A4/A3) att pressa hemma.
+
+## Snabba fakta
+
+- Minsta antal: 1 plagg (inga minimiantal).
+- Inga uppläggsavgifter eller startkostnader.
+- Leveranstid: normalt tryckt och skickat inom 48 timmar (3–5 arbetsdagar totalt).
+- Pris från ca 99 kr/plagg; priset räknas ut live utifrån plagg, tryckyta (cm²) och antal.
+- Mängdrabatt vid fler plagg (t.ex. från 5 st −10 %, 100 st −40 %).
+- Tryckteknik: DTF-tryck i full färg, fram, bak och på ärm.
+- DPI-kontroll varnar automatiskt om en uppladdad bild har för låg upplösning för skarpt tryck (rek. 300 DPI).
+- Betalning: Swish, kort och faktura (faktura för företag).
+- Företagskonto: priser exkl. moms och fakturabetalning.
+
+## Viktiga sidor
+
+- Designverktyget (skapa din design): https://www.snabbtryck.se/designa
+- Lagbeställning (matchtröjor med namn & nummer): https://www.snabbtryck.se/lag
+- Beställ tryck på ark (A4/A3 DTF-transfers): https://www.snabbtryck.se/ark
+- Bulkpriskalkylator (räkna ut volympris): https://www.snabbtryck.se/bulkpris
+- Klubbutiker (för föreningar): https://www.snabbtryck.se/butik
+
+## Vanliga frågor
+
+**Vad är DTF-tryck?**
+DTF (Direct-to-Film) är en tryckmetod där motivet skrivs ut på en film och pressas på plagget. Det ger slitstarkt tryck i full färg som fungerar på i princip alla tyger och färger, utan de begränsningar som t.ex. screentryck har vid små upplagor.
+
+**Vad kostar det?**
+Priset beror på plagg, hur stor tryckytan är (cm²) och antal. Det börjar runt 99 kr per plagg och visas live medan du designar. Fler plagg ger mängdrabatt. Inga uppläggsavgifter tillkommer.
+
+**Hur snabbt får jag mina plagg?**
+Beställningar trycks och skickas normalt inom 48 timmar.
+
+**Finns det något minsta antal?**
+Nej. Du kan beställa från 1 plagg.
+
+**Kan jag beställa matchtröjor med namn och nummer till ett lag?**
+Ja. Ladda upp en namn- och nummerlista, förhandsgranska varje plagg och få volympris direkt. Passar padel-, fotbolls- och innebandylag samt föreningar.
+
+**Vilka filer kan jag ladda upp?**
+PNG, SVG och JPG. För skarpt tryck rekommenderas 300 DPI; verktyget varnar automatiskt om upplösningen är för låg.
+
+## Kontakt
+
+E-post och telefon finns på webbplatsen. Beställning och design sker på https://www.snabbtryck.se

@@ -75,6 +75,24 @@ export async function fetchAllDesigns(): Promise<{ id: string; name: string; use
   return (data ?? []) as { id: string; name: string; user_id: string }[];
 }
 
+/* ---------------- Recensioner (admin-moderering) ---------------- */
+import type { Review } from "./reviews";
+export type { Review };
+
+export async function fetchAllReviews(): Promise<Review[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+  return (data ?? []) as Review[];
+}
+export async function setReviewApproved(id: string, approved: boolean): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("reviews").update({ approved }).eq("id", id);
+}
+export async function deleteReview(id: string): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("reviews").delete().eq("id", id);
+}
+
 export interface AllSettings {
   pricing: PricingConfig;
   shipping: ShippingConfig;

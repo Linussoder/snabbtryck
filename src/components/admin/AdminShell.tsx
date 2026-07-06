@@ -16,6 +16,7 @@ const NAV: { href: string; label: string; icon: React.ReactNode }[] = [
   { href: "/admin/customers", label: "Kunder", icon: <Icon d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" /> },
   { href: "/admin/leads", label: "Leads", icon: <Icon d="M22 6l-10 7L2 6M2 6h20v12H2z" /> },
   { href: "/admin/discounts", label: "Rabatter", icon: <Icon d="M9 9h.01M15 15h.01M20 4L4 20M8.5 8.5a2 2 0 1 1 0-.01M15.5 15.5a2 2 0 1 1 0-.01" /> },
+  { href: "/admin/reviews", label: "Omdömen", icon: <Icon d="M12 2l3 6.9 7.1.6-5.4 4.6 1.7 7L12 17.8 5.6 21.7l1.7-7L2 10.1l7.1-.6z" /> },
   { href: "/admin/inventory", label: "Lager", icon: <Icon d="M20 7l-8-4-8 4v10l8 4 8-4V7zM4 7l8 4 8-4M12 11v10" /> },
   { href: "/admin/analytics", label: "Analys", icon: <Icon d="M3 3v18h18M7 15l4-4 3 3 5-6" /> },
   { href: "/admin/marginal", label: "Marginal", icon: <Icon d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /> },

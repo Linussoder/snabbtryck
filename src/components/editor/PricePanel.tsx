@@ -14,6 +14,7 @@ import {
   setCart,
 } from "@/lib/account";
 import { saveDesignRemote } from "@/lib/designs-db";
+import { createTeamOrder } from "@/lib/team";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export function PricePanel() {
@@ -73,6 +74,24 @@ export function PricePanel() {
     const url = `${window.location.origin}/delad/${token}`;
     navigator.clipboard?.writeText(url).catch(() => {});
     push({ kind: "success", title: "Delbar länk kopierad", msg: url });
+  }
+
+  async function createTeamCollection() {
+    if (!user) {
+      push({ kind: "warn", title: "Logga in först", msg: "Skapa konto för att samla in storlekar från laget." });
+      router.push("/logga-in?next=/designa");
+      return;
+    }
+    const snap = serialize();
+    const res = await createTeamOrder(snap, snap.name);
+    if ("error" in res) {
+      push({ kind: "error", title: "Kunde inte skapa insamling" });
+      return;
+    }
+    const url = `${window.location.origin}/lag/samla/${res.token}`;
+    navigator.clipboard?.writeText(url).catch(() => {});
+    push({ kind: "success", title: "Insamlingslänk skapad & kopierad", msg: "Dela med laget!" });
+    router.push(`/lag/hantera/${res.token}`);
   }
 
   function addToCart() {
@@ -211,6 +230,9 @@ export function PricePanel() {
           <button onClick={save} className="btn btn-ghost btn-sm">Spara</button>
           <button onClick={share} className="btn btn-ghost btn-sm">Dela länk</button>
         </div>
+        <button onClick={createTeamCollection} className="btn btn-ghost btn-sm mt-2 w-full">
+          Samla in storlekar (lag) »
+        </button>
         <button onClick={addToCart} className="btn btn-primary mt-2 w-full">
           {business ? "Begär offert" : "Lägg i varukorg"} →
         </button>

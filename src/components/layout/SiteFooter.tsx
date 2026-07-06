@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="panel-ink on-ink relative overflow-hidden">
       <div className="halftone halftone-signal absolute inset-x-0 top-0 h-24 opacity-20" />
       <div className="relative mx-auto max-w-[1400px] px-4 md:px-8 py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
           <div>
             <Logo variant="dark" size={22} />
             <p className="mt-4 max-w-xs text-sm text-paper/60 leading-relaxed">
@@ -22,8 +22,18 @@ export function SiteFooter() {
             title="Skapa"
             links={[
               ["Designverktyget", "/designa"],
+              ["Mallar", "/mallar"],
               ["Lagbeställning", "/lag"],
               ["Mina skapelser", "/mina-skapelser"],
+            ]}
+          />
+          <FooterCol
+            title="Använd till"
+            links={[
+              ["Föreningströjor", "/for/foreningstrojor"],
+              ["Företagskläder", "/for/foretagsklader"],
+              ["Eventkläder", "/for/eventklader"],
+              ["Studentkläder", "/for/studentklader"],
             ]}
           />
           <FooterCol
@@ -31,16 +41,17 @@ export function SiteFooter() {
             links={[
               ["Bulkpriskalkylator", "/bulkpris"],
               ["Klubbutiker", "/butik"],
-              ["Offertförfrågan", "/lag"],
+              ["Så funkar det", "/sa-funkar-det"],
               ["Fakturabetalning", "/logga-in"],
             ]}
           />
           <FooterCol
             title="Kontakt"
             links={[
+              ["Så funkar det", "/sa-funkar-det"],
+              ["Omdömen", "/omdomen"],
               ["hej@tryck.se", "mailto:hej@tryck.se"],
               ["08-000 00 00", "tel:080000000"],
-              ["Instagram", "#"],
             ]}
           />
         </div>

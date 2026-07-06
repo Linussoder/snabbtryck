@@ -1,8 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell, PageHead } from "@/components/layout/PageShell";
 import { ORGS } from "@/lib/orgs";
 
-export const metadata = { title: "Klubbutiker — Snabbtryck" };
+export const metadata: Metadata = {
+  title: "Klubbutiker för föreningar & lag",
+  description:
+    "Egna klubbutiker för föreningar och lag – medlemmarna beställer profilkläder med klubbens logga till fast pris, direkt från sidan. DTF-tryck utan uppläggsavgifter.",
+  alternates: { canonical: "/butik" },
+  openGraph: {
+    title: "Klubbutiker för föreningar & lag | Snabbtryck",
+    description:
+      "Egna klubbutiker där medlemmar beställer profilkläder med klubbens logga till fast pris.",
+    url: "/butik",
+    type: "website",
+  },
+};
 
 export default function ButikIndex() {
   return (

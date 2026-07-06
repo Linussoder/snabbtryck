@@ -6,10 +6,43 @@ import { GarmentImage } from "@/components/ui/GarmentImage";
 import { GARMENTS } from "@/lib/garments";
 import { kr } from "@/lib/format";
 import { HeroStage } from "@/components/home/HeroStage";
+import { serviceLd, faqLd, jsonLdGraph } from "@/lib/seo";
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "Vad är DTF-tryck?",
+    a: "DTF (Direct-to-Film) är en tryckmetod där motivet skrivs ut på en film och pressas på plagget. Det ger slitstarkt tryck i full färg som fungerar på i princip alla tyger och färger — även mörka plagg — utan de begränsningar som screentryck har vid små upplagor.",
+  },
+  {
+    q: "Vad kostar det att trycka egna kläder?",
+    a: "Priset beror på plagg, hur stor tryckytan är (cm²) och antal. Det börjar runt 99 kr per plagg och visas live medan du designar. Fler plagg ger mängdrabatt och inga uppläggsavgifter tillkommer.",
+  },
+  {
+    q: "Hur snabbt får jag mina plagg?",
+    a: "Beställningar trycks och skickas normalt inom 48 timmar.",
+  },
+  {
+    q: "Finns det något minsta antal?",
+    a: "Nej — du kan beställa från 1 plagg. Inga minimiantal och inga startavgifter.",
+  },
+  {
+    q: "Kan jag beställa matchtröjor med namn och nummer till ett lag?",
+    a: "Ja. Ladda upp en namn- och nummerlista, förhandsgranska varje plagg och få volympris direkt. Perfekt för padel-, fotbolls- och innebandylag samt föreningar.",
+  },
+  {
+    q: "Vilka filer kan jag ladda upp?",
+    a: "PNG, SVG och JPG. För skarpt tryck rekommenderas 300 DPI — verktyget gör en automatisk DPI-koll och varnar om upplösningen är för låg.",
+  },
+];
 
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: jsonLdGraph([serviceLd(), faqLd(FAQ)]) }}
+      />
       <SiteHeader />
       <main>
         <Hero />
@@ -18,10 +51,30 @@ export default function Home() {
         <Steps />
         <TeamBanner />
         <SocialProof />
+        <Faq />
         <FinalCta />
       </main>
       <SiteFooter />
     </>
+  );
+}
+
+/* ------------------------------------------------------------ FAQ */
+function Faq() {
+  return (
+    <section className="border-t border-line bg-paper-2">
+      <div className="mx-auto max-w-[1400px] px-4 py-16 md:px-8">
+        <SectionHead index="05" title="Vanliga frågor" sub="Det kunderna oftast undrar över DTF-tryck." />
+        <dl className="mt-8 grid gap-x-10 gap-y-6 md:grid-cols-2">
+          {FAQ.map((item) => (
+            <div key={item.q} className="border-t border-line-2 pt-4">
+              <dt className="font-head text-lg">{item.q}</dt>
+              <dd className="mt-2 text-[15px] leading-relaxed text-ink-soft">{item.a}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
   );
 }
 
