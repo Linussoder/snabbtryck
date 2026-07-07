@@ -9,7 +9,12 @@ import "server-only";
 
 const FROM = process.env.EMAIL_FROM || "Snabbtryck <onboarding@resend.dev>";
 
-export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<{ ok: boolean; skipped?: boolean }> {
+export async function sendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  headers?: Record<string, string>;
+}): Promise<{ ok: boolean; skipped?: boolean }> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.log(`[email] (no RESEND_API_KEY) skulle skicka "${opts.subject}" → ${opts.to}`);
@@ -19,7 +24,7 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html }),
+      body: JSON.stringify({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html, headers: opts.headers }),
     });
     return { ok: res.ok };
   } catch {
@@ -49,6 +54,14 @@ export function orderConfirmationEmail(o: { ref: string; total: number; firstNam
     html: shell(hej, `<p style="color:#555;line-height:1.6">Vi har tagit emot din order <b>${o.ref}</b> på <b>${o.total} kr</b> och börjar förbereda tryckfilen. Du får ett mejl när den går i tryck och när den skickas.</p>
       <p style="margin-top:16px"><a href="https://www.snabbtryck.se/order/${o.ref}" style="background:#00aeef;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;display:inline-block">Följ din order →</a></p>`),
   };
+}
+
+export function marketingReminderEmail(o: { firstName?: string; unsubscribeUrl: string }): { subject: string; html: string } {
+  const hej = o.firstName ? `Hej ${o.firstName}!` : "Hej!";
+  const body = `<p style="color:#555;line-height:1.6">Du designade något snyggt men hann aldrig beställa. Vi sparade den åt dig — ett klick så är den på väg.</p>
+    <p style="margin-top:16px"><a href="https://www.snabbtryck.se/mina-skapelser" style="background:#00aeef;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;display:inline-block">Slutför din beställning →</a></p>
+    <p style="margin-top:20px;color:#8a929a;font-size:11px">Du får detta för att du valt marknadsföringsmejl från Snabbtryck. <a href="${o.unsubscribeUrl}" style="color:#8a929a;text-decoration:underline">Avprenumerera här</a>.</p>`;
+  return { subject: "Din design väntar på dig", html: shell(hej, body) };
 }
 
 export function orderStatusEmail(o: { ref: string; status: string; tracking?: string | null }): { subject: string; html: string } {

@@ -27,7 +27,7 @@ export default function Integritetspolicy() {
 
         <Section title="Personuppgiftsansvarig">
           <p>
-            <strong>[Fyll i: juridiskt företagsnamn]</strong>, org.nr <strong>[org.nr]</strong>, <strong>[adress]</strong>,
+            <strong>Söderstjerna Fastigheter AB</strong>, org.nr <strong>559242-2629</strong>, Kvartsgatan 2, 267 35 Bjuv,
             driver Snabbtryck (snabbtryck.se) och ansvarar för behandlingen av dina personuppgifter. Kontakt:
             <a href="mailto:hej@snabbtryck.se" className="link-underline"> hej@snabbtryck.se</a>.
           </p>

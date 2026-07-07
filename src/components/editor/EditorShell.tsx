@@ -14,18 +14,16 @@ import { DesignCanvas } from "./DesignCanvas";
 import { GarmentPicker } from "./GarmentPicker";
 import { ImageTool } from "./ImageTool";
 import { TextTool } from "./TextTool";
-import { EmojiTool } from "./EmojiTool";
 import { PlacementTool } from "./PlacementTool";
 import { LayerPanel } from "./LayerPanel";
 import { PricePanel } from "./PricePanel";
 
-type Tab = "plagg" | "bild" | "text" | "emoji" | "placering" | "lager";
+type Tab = "plagg" | "bild" | "text" | "placering" | "lager";
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "plagg", label: "Plagg", icon: "▧" },
   { key: "bild", label: "Bild", icon: "▣" },
   { key: "text", label: "Text", icon: "T" },
-  { key: "emoji", label: "Emoji", icon: "☺" },
   { key: "placering", label: "Placering", icon: "◎" },
   { key: "lager", label: "Lager", icon: "≡" },
 ];
@@ -38,8 +36,6 @@ function TabPanel({ tab }: { tab: Tab }) {
       return <ImageTool />;
     case "text":
       return <TextTool />;
-    case "emoji":
-      return <EmojiTool />;
     case "placering":
       return <PlacementTool />;
     case "lager":

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SettingsProvider } from "@/components/settings/SettingsProvider";
+import { CookieBanner } from "@/components/CookieBanner";
 import { SITE, organizationLd, websiteLd, jsonLdGraph } from "@/lib/seo";
 
 // Display / logo — tall condensed caps (hero + wordmark)
@@ -115,7 +116,10 @@ export default function RootLayout({
         />
         <AuthProvider>
           <SettingsProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              {children}
+              <CookieBanner />
+            </ToastProvider>
           </SettingsProvider>
         </AuthProvider>
       </body>

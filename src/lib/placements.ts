@@ -38,28 +38,36 @@ export function getPlacements(garment: Garment, view: ViewKey): Placement[] {
 
   if (TOP_SHAPES.has(garment.shape)) {
     if (view === "front") {
+      // Bröstplaceringar (logga/pocket-storlek). "Vänster/höger" = sidan du SER.
       const list: Placement[] = [
-        { id: "left-chest", label: "Vänster bröst", view, widthCm: 9, heightCm: 9, anchorX: 0.24, anchorY: 0.14 },
-        { id: "right-chest", label: "Höger bröst", view, widthCm: 9, heightCm: 9, anchorX: 0.76, anchorY: 0.14 },
+        { id: "left-chest", label: "Vänster bröst", view, widthCm: 9, heightCm: 9, anchorX: 0.26, anchorY: 0.13 },
+        { id: "right-chest", label: "Höger bröst", view, widthCm: 9, heightCm: 9, anchorX: 0.74, anchorY: 0.13 },
       ];
-      // Kräver större tryckyta:
-      if (area.maxWcm >= 18)
-        list.push({ id: "center-chest", label: "Bröst centrerat", view, widthCm: Math.min(24, area.maxWcm), heightCm: 14, anchorX: 0.5, anchorY: 0.18 });
+      if (area.maxWcm >= 18) {
+        list.push({ id: "center-chest", label: "Bröst centrerat", view, widthCm: Math.min(24, area.maxWcm), heightCm: 14, anchorX: 0.5, anchorY: 0.16 });
+        list.push({ id: "lower-front", label: "Nedre fram (mage)", view, widthCm: Math.min(22, area.maxWcm), heightCm: 14, anchorX: 0.5, anchorY: 0.78 });
+      }
       if (area.maxWcm >= 24)
-        list.push({ id: "full-front", label: "Helsida fram", view, widthCm: Math.min(30, area.maxWcm), heightCm: Math.min(40, area.maxHcm), anchorX: 0.5, anchorY: 0.52 });
+        list.push({ id: "full-front", label: "Helsida fram", view, widthCm: Math.min(30, area.maxWcm), heightCm: Math.min(40, area.maxHcm), anchorX: 0.5, anchorY: 0.5 });
       return list;
     }
     if (view === "back") {
       const list: Placement[] = [
-        { id: "nape", label: "Nacke", view, widthCm: 9, heightCm: 7, anchorX: 0.5, anchorY: 0.06 },
+        { id: "neck-label", label: "Nacketikett", view, widthCm: 8, heightCm: 6, anchorX: 0.5, anchorY: 0.05 },
       ];
-      if (area.maxWcm >= 24)
-        list.push({ id: "full-back", label: "Rygg helsida", view, widthCm: Math.min(34, area.maxWcm), heightCm: Math.min(42, area.maxHcm), anchorX: 0.5, anchorY: 0.5 });
+      // Över skulderbladen (yoke / tvärs över övre ryggen) — brett, högt upp.
+      if (area.maxWcm >= 22)
+        list.push({ id: "upper-back", label: "Övre rygg (axelblad)", view, widthCm: Math.min(30, area.maxWcm), heightCm: 12, anchorX: 0.5, anchorY: 0.2 });
+      if (area.maxWcm >= 24) {
+        list.push({ id: "full-back", label: "Rygg helsida", view, widthCm: Math.min(34, area.maxWcm), heightCm: Math.min(42, area.maxHcm), anchorX: 0.5, anchorY: 0.48 });
+        list.push({ id: "lower-back", label: "Nedre rygg", view, widthCm: Math.min(24, area.maxWcm), heightCm: 14, anchorX: 0.5, anchorY: 0.82 });
+      }
       return list;
     }
     if (view === "sleeve") {
       return [
-        { id: "sleeve", label: "Ärm", view, widthCm: Math.min(8, area.maxWcm), heightCm: Math.min(22, area.maxHcm), anchorX: 0.5, anchorY: 0.5 },
+        { id: "sleeve", label: "Ärm", view, widthCm: Math.min(8, area.maxWcm), heightCm: Math.min(10, area.maxHcm), anchorX: 0.5, anchorY: 0.32 },
+        { id: "sleeve-long", label: "Ärm (nedåt)", view, widthCm: Math.min(7, area.maxWcm), heightCm: Math.min(24, area.maxHcm), anchorX: 0.5, anchorY: 0.6 },
       ];
     }
   }

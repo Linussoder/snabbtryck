@@ -8,7 +8,7 @@ export const SITE = {
   lang: "sv",
   areaServed: "SE",
   description:
-    "Designa din egen tröja, hoodie eller keps direkt i webbläsaren. Ladda upp logga, lägg till text och emoji, placera fritt och se priset live per cm² tryckyta. DTF-tryck utan uppläggsavgifter, från 1 plagg — tryckt och skickat inom 48 timmar.",
+    "Designa din egen tröja, hoodie eller keps direkt i webbläsaren. Ladda upp logga, lägg till text, placera fritt med standardplaceringar och se priset live per cm² tryckyta. DTF-tryck utan uppläggsavgifter, från 1 plagg — tryckt och skickat inom 48 timmar.",
   tagline: "Designa din egen tröja med DTF-tryck",
   sameAs: [] as string[], // fyll på med sociala profiler när de finns
 };

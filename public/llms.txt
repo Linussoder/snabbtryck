@@ -1,6 +1,6 @@
 # Snabbtryck
 
-> Snabbtryck är en svensk DTF-tryckplattform där du designar egna kläder direkt i webbläsaren – ladda upp en logga, lägg till text och emoji, placera fritt på plagget och se priset live per cm² tryckyta. Tryckt och skickat inom 48 timmar, från 1 plagg, utan uppläggsavgifter eller minimiantal.
+> Snabbtryck är en svensk DTF-tryckplattform där du designar egna kläder direkt i webbläsaren – ladda upp en logga, lägg till text, välj bland alla vanliga tryckplaceringar (vänster/höger bröst, helsida fram, över axelbladen, helsida rygg m.fl.), placera fritt och se priset live per cm² tryckyta. Tryckt och skickat inom 48 timmar, från 1 plagg, utan uppläggsavgifter eller minimiantal.
 
 Webbplats: https://www.snabbtryck.se
 Språk: svenska

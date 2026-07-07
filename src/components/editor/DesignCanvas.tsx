@@ -243,7 +243,7 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
         <div className="pointer-events-none absolute inset-x-0 bottom-6 text-center">
           <p className="spec text-muted">
             Tomt på {view === "front" ? "framsidan" : view === "back" ? "baksidan" : "ärmen"} — lägg
-            till bild, text eller emoji
+            till bild eller text
           </p>
         </div>
       )}

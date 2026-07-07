@@ -34,6 +34,7 @@ function LoginInner() {
   const [password, setPassword] = useState("");
   const [business, setBusiness] = useState(false);
   const [company, setCompany] = useState("");
+  const [marketing, setMarketing] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmSent, setConfirmSent] = useState(false);
@@ -84,6 +85,7 @@ function LoginInner() {
           name: name || email.split("@")[0],
           business,
           company_name: business ? company || null : null,
+          marketing_consent: marketing,
         },
       },
     });
@@ -283,6 +285,15 @@ function LoginInner() {
                       className="field"
                     />
                   )}
+                  <label className="flex cursor-pointer items-center gap-2 py-1">
+                    <input
+                      type="checkbox"
+                      checked={marketing}
+                      onChange={(e) => setMarketing(e.target.checked)}
+                      className="h-4 w-4 accent-[var(--color-signal)]"
+                    />
+                    <span className="text-sm text-muted">Skicka mig erbjudanden och nyheter via e-post (valfritt)</span>
+                  </label>
                 </>
               )}
 

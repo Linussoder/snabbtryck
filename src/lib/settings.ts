@@ -35,7 +35,7 @@ export interface CostConfig {
 }
 
 export const DEFAULT_PRICING: PricingConfig = {
-  pricePerCm2: 0.85,
+  pricePerCm2: 0.23,
   printSetupMin: 20,
   vatRate: 0.25,
   discountTiers: [

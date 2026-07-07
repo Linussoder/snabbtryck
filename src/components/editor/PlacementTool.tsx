@@ -75,7 +75,7 @@ export function PlacementTool() {
 
         {noTarget ? (
           <p className="spec rounded-[3px] border border-dashed border-line p-3 text-center text-[11px] text-muted">
-            Välj ett element först — lägg till bild, text eller emoji och markera det.
+            Välj ett element först — lägg till bild eller text och markera det.
           </p>
         ) : (
           <>

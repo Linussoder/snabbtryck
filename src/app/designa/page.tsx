@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 export const metadata: Metadata = {
   title: "Designverktyget – designa din tröja online",
   description:
-    "Designa din egen tröja, hoodie eller keps direkt i webbläsaren. Ladda upp en logga, lägg till text och emoji, placera fritt och se priset live per cm² tryckyta. DTF-tryck, från 1 plagg.",
+    "Designa din egen tröja, hoodie eller keps direkt i webbläsaren. Ladda upp en logga, lägg till text, placera fritt med standardplaceringar och se priset live per cm² tryckyta. DTF-tryck, från 1 plagg.",
   alternates: { canonical: "/designa" },
   openGraph: {
     title: "Designverktyget – designa din tröja online | Snabbtryck",
