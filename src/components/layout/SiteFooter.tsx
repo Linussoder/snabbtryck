@@ -22,7 +22,6 @@ export function SiteFooter() {
             title="Skapa"
             links={[
               ["Designverktyget", "/designa"],
-              ["Mallar", "/mallar"],
               ["Lagbeställning", "/lag"],
               ["Mina skapelser", "/mina-skapelser"],
             ]}

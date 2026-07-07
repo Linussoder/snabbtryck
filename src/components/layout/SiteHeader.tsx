@@ -8,7 +8,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const NAV = [
   { href: "/designa", label: "Designa" },
-  { href: "/mallar", label: "Mallar" },
   { href: "/lag", label: "Lagbeställning" },
   { href: "/ark", label: "Tryck på ark" },
   { href: "/mina-skapelser", label: "Mina skapelser" },

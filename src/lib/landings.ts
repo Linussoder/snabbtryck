@@ -64,16 +64,16 @@ export const LANDINGS: Landing[] = [
     intro:
       "Gör tillfället minnesvärt med matchande tröjor. Svensexa, möhippa, kickoff eller festival — börja från en färdig mall och gör den till er egen på minuter.",
     bullets: [
-      { title: "Färdiga mallar", text: "Slipp den tomma ytan — välj en mall för svensexa, möhippa eller student och byt text." },
+      { title: "Egen design på minuter", text: "Skriv festens namn, lägg till emoji och en rolig text — placera fritt på plagget." },
       { title: "Beställ från 1 plagg", text: "Bara en tröja eller hela gänget — inga minimikrav." },
       { title: "Snabb leverans", text: "Tryckt och skickat inom 48 timmar så det hinner fram till festen." },
     ],
     garments: ["tshirt", "tank", "cap"],
     faq: [
-      { q: "Har ni färdiga designer?", a: "Ja, i mallbiblioteket finns designer för svensexa, möhippa, student och mer — anpassa fritt." },
+      { q: "Kan jag designa helt själv?", a: "Ja — skriv egen text, lägg till emoji och ladda upp bilder direkt i verktyget och se resultatet på plagget live." },
       { q: "Hur snabbt kan jag få dem?", a: "Vi trycker och skickar inom 48 timmar. Beställ i god tid före eventet." },
     ],
-    cta: { label: "Bläddra bland mallar", href: "/mallar" },
+    cta: { label: "Designa din festtröja", href: "/designa" },
   },
   {
     slug: "studentklader",
@@ -85,15 +85,15 @@ export const LANDINGS: Landing[] = [
       "Fira studenten i matchande tröjor. Sätt klassens namn, år och egen design — beställ till hela gänget med volymrabatt.",
     bullets: [
       { title: "Hela klassen", text: "Volympris ju fler ni är, med individuella namn om ni vill." },
-      { title: "Egen design eller mall", text: "Börja från en student-mall eller skapa något helt eget." },
+      { title: "Egen design", text: "Skapa er egen studentdesign med text, år och bilder — helt fritt i verktyget." },
       { title: "Klart i tid", text: "Tryckt och skickat inom 48 timmar." },
     ],
     garments: ["tshirt", "hoodie"],
     faq: [
       { q: "Kan alla i klassen ha sitt namn?", a: "Ja — använd lagbeställningen för att lägga in namn per person." },
-      { q: "Finns det student-mallar?", a: "Ja, kolla mallbiblioteket för färdiga student-designer." },
+      { q: "Kan vi göra en helt egen design?", a: "Ja, designa fritt i verktyget med text, årtal och egna bilder." },
     ],
-    cta: { label: "Skapa studenttröja", href: "/mallar" },
+    cta: { label: "Skapa studenttröja", href: "/designa" },
   },
 ];
 

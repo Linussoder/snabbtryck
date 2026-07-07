@@ -57,7 +57,6 @@ export default function SaFunkarDet() {
 
         <section className="flex flex-col items-center gap-3 text-center">
           <Link href="/designa" className="btn btn-primary">Testa själv — öppna verktyget →</Link>
-          <Link href="/mallar" className="spec text-muted hover:text-ink">…eller börja från en färdig mall</Link>
         </section>
 
         <section>
