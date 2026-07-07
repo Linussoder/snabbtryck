@@ -43,10 +43,10 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-4">
           {acc ? (
             <div className="hidden sm:flex items-center gap-3">
-              <span className="spec text-on-dark-3">
+              <Link href="/konto" className="spec text-on-dark-3 hover:text-paper">
                 {acc.business ? "▣ " : "◉ "}
                 {acc.name.split(" ")[0]}
-              </span>
+              </Link>
               <button
                 onClick={() => signOut()}
                 className="text-xs text-on-dark-3 hover:text-paper underline underline-offset-2"
@@ -90,7 +90,7 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
-              href={acc ? "/mina-skapelser" : "/logga-in"}
+              href={acc ? "/konto" : "/logga-in"}
               onClick={() => setOpen(false)}
               className="py-2 text-sm font-medium text-on-dark-2"
             >
