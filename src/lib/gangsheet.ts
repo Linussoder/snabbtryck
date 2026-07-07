@@ -86,8 +86,7 @@ export async function buildGangSheets(items: GangItem[]): Promise<string[]> {
     c.width = pageW;
     c.height = pageH;
     const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, pageW, pageH);
+    // Transparent bakgrund — DTF-transferfilm är genomskinlig (ingen vit botten).
     for (const p of placed) {
       try {
         ctx.drawImage(p.img, p.x, p.y, p.w, p.h);

@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/admin/ui";
 import { useToast } from "@/components/ui/Toast";
 import { getGarment } from "@/lib/garments";
 import { buildGangSheets, downloadDataUrl, type GangItem } from "@/lib/gangsheet";
+import { buildPrintFile, printViews } from "@/lib/printfile";
 import type { OrderStatus } from "@/lib/account";
 
 const NEXT: Record<OrderStatus, OrderStatus | null> = {
@@ -37,22 +38,24 @@ export default function ProductionQueue() {
 
   async function makeGangSheet() {
     if (sheeting) return;
-    const items: GangItem[] = [];
-    for (const o of queue) {
-      const g = getGarment(o.design.garmentId);
-      for (const el of o.design.elements) {
-        if (el.type === "image" && typeof el.src === "string") {
-          const wCm = el.w * g.printRefWidthCm;
-          items.push({ src: el.src, wCm, hCm: wCm * el.ar });
-        }
-      }
-    }
-    if (!items.length) {
-      push({ kind: "info", title: "Inga tryckbilder i kön" });
-      return;
-    }
     setSheeting(true);
     try {
+      // Komponera en tryckfärdig fil (text + bild) per vy och plagg-antal.
+      const items: GangItem[] = [];
+      for (const o of queue) {
+        const qty = o.lines.reduce((a, l) => a + l.qty, 0) || 1;
+        for (const v of printViews(o.design)) {
+          const pf = await buildPrintFile(o.design, v);
+          if (!pf) continue;
+          for (let i = 0; i < qty; i++) {
+            items.push({ src: pf.dataUrl, wCm: pf.widthCm, hCm: pf.heightCm });
+          }
+        }
+      }
+      if (!items.length) {
+        push({ kind: "info", title: "Inga tryck i kön" });
+        return;
+      }
       const pages = await buildGangSheets(items);
       pages.forEach((p, i) => downloadDataUrl(p, `snabbtryck-a3-ark-${i + 1}.png`));
       push({ kind: "success", title: `${pages.length} A3-ark skapade`, msg: `${items.length} tryck packade` });

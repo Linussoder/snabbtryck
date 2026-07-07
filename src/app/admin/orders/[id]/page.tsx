@@ -7,7 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import { DesignThumb } from "@/components/ui/DesignThumb";
 import { useToast } from "@/components/ui/Toast";
 import { StatusBadge } from "@/components/admin/ui";
-import { getGarment } from "@/lib/garments";
+import { getGarment, VIEW_LABEL } from "@/lib/garments";
+import { buildPrintFile, printViews } from "@/lib/printfile";
+import { downloadDataUrl } from "@/lib/gangsheet";
 import { kr } from "@/lib/format";
 import { VAT_RATE } from "@/lib/pricing";
 import type { AdminOrder, OrderMessage } from "@/lib/admin-data";
@@ -33,6 +35,25 @@ export default function AdminOrderDetail() {
   const [messages, setMessages] = useState<OrderMessage[]>([]);
   const [msgInput, setMsgInput] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
+  const [genView, setGenView] = useState<string | null>(null);
+
+  async function genPrintFile(view: "front" | "back" | "sleeve") {
+    if (!order || genView) return;
+    setGenView(view);
+    try {
+      const pf = await buildPrintFile(order.design, view);
+      if (!pf) {
+        push({ kind: "info", title: "Inget tryck i den vyn" });
+        return;
+      }
+      downloadDataUrl(pf.dataUrl, `${order.ref}-tryckfil-${view}-${pf.widthCm}x${pf.heightCm}cm-300dpi.png`);
+      push({ kind: "success", title: "Tryckfil skapad", msg: `${VIEW_LABEL[view]} · ${pf.widthCm}×${pf.heightCm} cm @ 300 DPI` });
+    } catch {
+      push({ kind: "error", title: "Kunde inte skapa tryckfil" });
+    } finally {
+      setGenView(null);
+    }
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -239,17 +260,38 @@ export default function AdminOrderDetail() {
           </section>
 
           <section className="card p-5">
-            <h2 className="eyebrow mb-3">Tryckfiler ({files.length})</h2>
-            {files.length === 0 ? (
-              <p className="text-sm text-muted">Inga uppladdade originalfiler.</p>
-            ) : (
-              <ul className="flex flex-wrap gap-2">
-                {files.map((f) => (
-                  <li key={f.url}>
-                    <a href={f.url} download className="btn btn-outline btn-sm">↓ {f.name}</a>
-                  </li>
-                ))}
-              </ul>
+            <h2 className="eyebrow mb-3">Tryckfiler</h2>
+
+            {/* Tryckfärdig, komponerad fil (text + bild) i verklig storlek, 300 DPI. */}
+            <p className="spec mb-2 text-[11px] text-muted">Tryckfärdig fil (transparent PNG, 300 DPI):</p>
+            <div className="flex flex-wrap gap-2">
+              {printViews(order.design).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => genPrintFile(v)}
+                  disabled={genView !== null}
+                  className="btn btn-primary btn-sm"
+                >
+                  {genView === v ? "Skapar…" : `↓ Tryckfil · ${VIEW_LABEL[v]}`}
+                </button>
+              ))}
+              {printViews(order.design).length === 0 && (
+                <p className="text-sm text-muted">Designen saknar tryck.</p>
+              )}
+            </div>
+
+            {/* Uppladdade originalfiler (om kunden laddat upp bilder). */}
+            {files.length > 0 && (
+              <>
+                <p className="spec mb-2 mt-4 text-[11px] text-muted">Uppladdade originalfiler:</p>
+                <ul className="flex flex-wrap gap-2">
+                  {files.map((f) => (
+                    <li key={f.url}>
+                      <a href={f.url} download className="btn btn-outline btn-sm">↓ {f.name}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </section>
 
