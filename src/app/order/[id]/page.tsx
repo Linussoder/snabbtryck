@@ -85,12 +85,12 @@ export default function OrderPage() {
   return (
     <PageShell>
       {/* confirmation banner */}
-      <div className="border-b border-line bg-signal">
+      <div className="border-b border-line bg-paper-2">
         <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-4 py-8 md:px-8">
-          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-white text-2xl text-signal">✓</span>
-          <div className="text-white">
-            <p className="eyebrow text-white/70">Order {order.ref}</p>
-            <h1 className="display text-3xl sm:text-4xl">Tack — vi trycker!</h1>
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-signal text-2xl text-white">✓</span>
+          <div>
+            <p className="eyebrow text-muted">Order {order.ref}</p>
+            <h1 className="display text-3xl text-ink sm:text-4xl">Tack — vi trycker!</h1>
           </div>
         </div>
       </div>

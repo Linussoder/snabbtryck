@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
 import { DesignSnapshot } from "@/lib/store";
-import { mockupDataUrl } from "@/lib/mockup";
+import { GarmentPreview } from "@/components/ui/GarmentPreview";
 import { ViewKey } from "@/lib/garments";
 
+/**
+ * Miniatyr av en design. Renderar samma riktiga plaggfoto + element som
+ * editorn (via GarmentPreview) så bilden matchar det kunden designade.
+ * Anroparen placerar den i en kvadratisk box.
+ */
 export function DesignThumb({
   design,
   view,
@@ -14,13 +18,5 @@ export function DesignThumb({
   view?: ViewKey;
   className?: string;
 }) {
-  const src = useMemo(() => mockupDataUrl(design, view), [design, view]);
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={design.name}
-      className={`h-full w-full object-contain ${className}`}
-    />
-  );
+  return <GarmentPreview design={design} view={view} className={className} />;
 }
