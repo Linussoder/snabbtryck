@@ -7,4 +7,5 @@ export interface Profile {
   company_name: string | null;
   org_nr: string | null;
   role: "customer" | "admin";
+  marketing_consent: boolean;
 }

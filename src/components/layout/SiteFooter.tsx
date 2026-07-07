@@ -57,8 +57,8 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col gap-3 border-t border-ink-line pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="spec text-paper/40">
-            © {new Date().getFullYear()} SNABBTRYCK · DTF-tryck i Sverige · Alla
-            priser inkl. moms
+            © {new Date().getFullYear()} SNABBTRYCK · DTF-tryck i Sverige ·{" "}
+            <Link href="/integritetspolicy" className="hover:text-signal">Integritetspolicy</Link>
           </p>
           <div className="flex items-center gap-4 spec text-paper/40">
             <span>SWISH</span>

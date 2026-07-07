@@ -13,17 +13,17 @@ export default function Konto() {
   const { user, profile, loading, signOut } = useAuth();
   const { push } = useToast();
 
-  const [form, setForm] = useState({ name: "", business: false, company_name: "", org_nr: "" });
+  const [form, setForm] = useState({ name: "", business: false, company_name: "", org_nr: "", marketing: false });
   const [newEmail, setNewEmail] = useState("");
   const [pw, setPw] = useState({ p1: "", p2: "" });
-  const [busy, setBusy] = useState<"" | "profile" | "email" | "pw">("");
+  const [busy, setBusy] = useState<"" | "profile" | "email" | "pw" | "export" | "delete">("");
 
   useEffect(() => {
     if (!loading && !user) router.push("/logga-in?next=/konto");
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (profile) setForm({ name: profile.name ?? "", business: profile.business, company_name: profile.company_name ?? "", org_nr: profile.org_nr ?? "" });
+    if (profile) setForm({ name: profile.name ?? "", business: profile.business, company_name: profile.company_name ?? "", org_nr: profile.org_nr ?? "", marketing: profile.marketing_consent });
     if (user?.email) setNewEmail(user.email);
   }, [profile, user]);
 
@@ -40,10 +40,51 @@ export default function Konto() {
         business: form.business,
         company_name: form.business ? form.company_name.trim() || null : null,
         org_nr: form.business ? form.org_nr.trim() || null : null,
+        marketing_consent: form.marketing,
       })
       .eq("id", user.id);
     setBusy("");
     push(error ? { kind: "error", title: "Kunde inte spara", msg: error.message } : { kind: "success", title: "Uppgifter sparade" });
+  }
+
+  async function exportData() {
+    if (!user) return;
+    setBusy("export");
+    const supabase = createClient();
+    const [designs, orders, teams] = await Promise.all([
+      supabase.from("designs").select("*"),
+      supabase.from("orders").select("*"),
+      supabase.from("team_orders").select("*"),
+    ]);
+    const data = {
+      exportedAt: new Date().toISOString(),
+      account: { id: user.id, email: user.email, created_at: user.created_at },
+      profile,
+      designs: designs.data ?? [],
+      orders: orders.data ?? [],
+      team_orders: teams.data ?? [],
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `snabbtryck-mina-uppgifter-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setBusy("");
+    push({ kind: "success", title: "Export klar", msg: "Din data laddades ner som JSON." });
+  }
+
+  async function deleteAccount() {
+    if (!confirm("Radera ditt konto permanent?\n\nDitt konto, sparade designer och profil tas bort och går inte att återställa. Lagda ordrar behålls anonymt för bokföring (lagkrav).")) return;
+    if (!confirm("Är du helt säker? Detta går INTE att ångra.")) return;
+    setBusy("delete");
+    const supabase = createClient();
+    const { error } = await supabase.rpc("delete_own_account");
+    if (error) {
+      setBusy("");
+      return push({ kind: "error", title: "Kunde inte radera", msg: error.message });
+    }
+    await signOut();
+    window.location.assign("/?konto=raderat");
   }
 
   async function saveEmail() {
@@ -97,6 +138,10 @@ export default function Konto() {
                 </label>
               </div>
             )}
+            <label className="flex cursor-pointer items-center gap-2 py-1">
+              <input type="checkbox" checked={form.marketing} onChange={(e) => setForm({ ...form, marketing: e.target.checked })} className="h-4 w-4 accent-[var(--color-signal)]" />
+              <span className="text-sm">Ja tack, skicka erbjudanden och nyheter via e-post <span className="text-muted">(kan avslutas när som helst)</span></span>
+            </label>
             <button onClick={saveProfile} disabled={busy === "profile"} className="btn btn-primary btn-sm">{busy === "profile" ? "Sparar…" : "Spara uppgifter"}</button>
           </div>
         </section>
@@ -119,6 +164,25 @@ export default function Konto() {
             <input type="password" value={pw.p2} onChange={(e) => setPw({ ...pw, p2: e.target.value })} placeholder="Upprepa" autoComplete="new-password" className="field" />
           </div>
           <button onClick={savePassword} disabled={busy === "pw"} className="btn btn-primary btn-sm mt-3">{busy === "pw" ? "Sparar…" : "Byt lösenord"}</button>
+        </section>
+
+        {/* Dina uppgifter (GDPR) */}
+        <section className="card p-6">
+          <h2 className="head text-lg uppercase">Dina uppgifter</h2>
+          <p className="mt-1 text-sm text-muted">Enligt GDPR har du rätt att få ut all data vi lagrar om dig. Ladda ner den som JSON.</p>
+          <button onClick={exportData} disabled={busy === "export"} className="btn btn-outline btn-sm mt-3">{busy === "export" ? "Exporterar…" : "↓ Ladda ner mina uppgifter"}</button>
+          <p className="spec mt-3 text-[11px] text-muted">Läs mer om hur vi hanterar personuppgifter i vår <Link href="/integritetspolicy" className="link-underline">integritetspolicy</Link>.</p>
+        </section>
+
+        {/* Radera konto */}
+        <section className="card border-bad/40 p-6">
+          <h2 className="head text-lg uppercase text-bad">Radera konto</h2>
+          <p className="mt-1 text-sm text-muted">
+            Tar bort ditt konto, sparade designer och din profil permanent. Lagda ordrar behålls anonymt för bokföring (lagkrav enligt bokföringslagen).
+          </p>
+          <button onClick={deleteAccount} disabled={busy === "delete"} className="mt-3 rounded-lg border border-bad px-4 py-2 text-sm text-bad hover:bg-bad hover:text-white">
+            {busy === "delete" ? "Raderar…" : "Radera mitt konto permanent"}
+          </button>
         </section>
 
         {/* Meta / actions */}
