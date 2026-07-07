@@ -260,6 +260,13 @@ export default function AdminOrderDetail() {
             </div>
           </section>
 
+          {order.contact?.note && (
+            <section className="card border-l-2 border-signal p-5">
+              <h2 className="eyebrow mb-2">Kundens meddelande</h2>
+              <p className="whitespace-pre-wrap text-sm text-ink">{order.contact.note}</p>
+            </section>
+          )}
+
           <section className="card p-5">
             <h2 className="eyebrow mb-3">Tryckspecifikation</h2>
             <PrintSpecList design={order.design} />

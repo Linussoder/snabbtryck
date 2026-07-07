@@ -50,6 +50,7 @@ export default function Kassa() {
     zip: "",
     city: "",
     company: "",
+    note: "",
   });
   const setField = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -269,6 +270,17 @@ export default function Kassa() {
                     <Field label="Företag / org.nr" full value={form.company} onChange={setField("company")} />
                   )}
                 </div>
+                <label className="block">
+                  <span className="eyebrow mb-1 block">Meddelande / önskemål (valfritt)</span>
+                  <textarea
+                    value={form.note}
+                    onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="T.ex. särskilda önskemål om tryck, färg eller placering på plagget."
+                    className="field w-full resize-y"
+                  />
+                </label>
                 <div>
                   <h3 className="eyebrow mb-2">Leveranssätt</h3>
                   <div className="grid gap-2 sm:grid-cols-2">
