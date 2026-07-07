@@ -42,6 +42,7 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
   const select = useEditor((s) => s.select);
   const updateEl = useEditor((s) => s.updateEl);
   const removeEl = useEditor((s) => s.removeEl);
+  const hint = useEditor((s) => s.hint);
 
   const color = garment.colors[colorIndex] ?? garment.colors[0];
   const areas = garment.areas.filter((a) => a.key === view);
@@ -160,6 +161,15 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
               className="absolute inset-0 border border-dashed"
               style={{ borderColor: color.dark ? "rgba(255,255,255,0.45)" : "rgba(10,10,10,0.4)" }}
             />
+            {/* center-hjälplinjer (mitt-x + mitt-y) för att rikta in trycket */}
+            <div
+              className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2"
+              style={{ background: color.dark ? "rgba(255,255,255,0.22)" : "rgba(10,10,10,0.16)" }}
+            />
+            <div
+              className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
+              style={{ background: color.dark ? "rgba(255,255,255,0.22)" : "rgba(10,10,10,0.16)" }}
+            />
             <span
               className="absolute -top-4 left-0 spec text-[9px] uppercase tracking-wider"
               style={{ color: color.dark ? "rgba(255,255,255,0.6)" : "rgba(10,10,10,0.5)" }}
@@ -168,6 +178,24 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
             </span>
           </div>
         ))}
+
+        {/* placerings-hjälplinje (hover i Placering-fliken) — visar var trycket hamnar */}
+        {hint && hint.view === view && (
+          <div
+            className="pointer-events-none absolute z-[6]"
+            style={{
+              left: `${hint.x * 100}%`,
+              top: `${hint.y * 100}%`,
+              width: `${hint.w * 100}%`,
+              height: `${hint.h * 100}%`,
+            }}
+          >
+            <div className="absolute inset-0 rounded-[2px] border-2 border-signal bg-signal/10" />
+            <span className="absolute -bottom-4 left-0 whitespace-nowrap spec text-[9px] font-medium uppercase tracking-wider text-signal">
+              {hint.label}
+            </span>
+          </div>
+        )}
 
         {/* elements */}
         {viewEls.map((el) => {

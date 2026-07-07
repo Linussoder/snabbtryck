@@ -8,14 +8,10 @@ import { evaluateQuality } from "@/lib/dpi";
 import { kr, num, pct } from "@/lib/format";
 import { PriceDisplay } from "@/components/ui/PriceDisplay";
 import { useToast } from "@/components/ui/Toast";
-import {
-  saveDesign,
-  shareDesign,
-  setCart,
-} from "@/lib/account";
-import { saveDesignRemote } from "@/lib/designs-db";
+import { shareDesign, setCart } from "@/lib/account";
 import { createTeamOrder } from "@/lib/team";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useSaveDesign } from "./useSaveDesign";
 
 export function PricePanel() {
   const router = useRouter();
@@ -35,6 +31,7 @@ export function PricePanel() {
 
   const { user, profile } = useAuth();
   const business = profile?.business ?? false;
+  const save = useSaveDesign();
 
   // kvalitetsvarningar
   const warnings = elements
@@ -53,21 +50,6 @@ export function PricePanel() {
 
   const next = nextTier(qty);
   const shown = business ? price.subtotalExclVat : price.subtotalInclVat;
-
-  async function save() {
-    const snap = serialize();
-    try {
-      if (user) {
-        await saveDesignRemote(snap);
-        push({ kind: "success", title: "Design sparad", msg: "Synkad till ditt konto — hittas under Mina skapelser." });
-      } else {
-        saveDesign(snap);
-        push({ kind: "success", title: "Design sparad lokalt", msg: "Logga in för att spara den i ditt konto." });
-      }
-    } catch {
-      push({ kind: "error", title: "Kunde inte spara", msg: "Försök igen." });
-    }
-  }
 
   function share() {
     const token = shareDesign(serialize());

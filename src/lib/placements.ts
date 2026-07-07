@@ -112,6 +112,26 @@ export function applyPlacement(
   return { x: cx, y: cy, w, view: p.view, wcm, hcm: wcm * ar };
 }
 
+/**
+ * Guide-rektangel (topp-vänster + storlek, 0..1 av canvasen) som visar var en
+ * placering hamnar — för hjälplinjer i editorn. Oberoende av valt element.
+ * Canvasen är kvadratisk så cm→andel är samma i x- och y-led.
+ */
+export function placementGuideRect(
+  p: Placement,
+  garment: Garment
+): { x: number; y: number; w: number; h: number } | null {
+  const area = garment.areas.find((a) => a.key === p.view);
+  if (!area) return null;
+  const wcm = Math.min(p.widthCm, area.maxWcm);
+  const hcm = Math.min(p.heightCm ?? wcm, area.maxHcm);
+  const w = wcm / garment.printRefWidthCm;
+  const h = hcm / garment.printRefWidthCm;
+  const cx = clamp(area.x + p.anchorX * area.w, 0.06, 0.94);
+  const cy = clamp(area.y + p.anchorY * area.h, 0.06, 0.94);
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
 /** Etikett-text i Space Mono-stil, t.ex. "30 × 40 cm" eller "9 cm". */
 export function placementSpec(p: Placement, area: PrintArea): string {
   const wcm = Math.min(p.widthCm, area.maxWcm);

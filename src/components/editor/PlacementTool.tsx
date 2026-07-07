@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { useEditor, DesignElement } from "@/lib/store";
 import { VIEW_LABEL } from "@/lib/garments";
 import {
   getPlacements,
   applyPlacement,
   placementSpec,
+  placementGuideRect,
   isPlacementActive,
   Placement,
 } from "@/lib/placements";
@@ -19,7 +21,17 @@ export function PlacementTool() {
   const selectedId = useEditor((s) => s.selectedId);
   const select = useEditor((s) => s.select);
   const updateEl = useEditor((s) => s.updateEl);
+  const setHint = useEditor((s) => s.setHint);
   const { push } = useToast();
+
+  // Rensa hjälplinjen när panelen lämnas (t.ex. byte av flik).
+  useEffect(() => () => setHint(null), [setHint]);
+
+  function hoverOn(p: Placement) {
+    const r = placementGuideRect(p, garment);
+    if (r) setHint({ view, label: p.label, ...r });
+  }
+  const hoverOff = () => setHint(null);
 
   const placements = getPlacements(garment, view);
   const viewEls = elements.filter((e) => e.view === view);
@@ -91,6 +103,10 @@ export function PlacementTool() {
                   <button
                     key={p.id}
                     onClick={() => apply(p)}
+                    onMouseEnter={() => hoverOn(p)}
+                    onMouseLeave={hoverOff}
+                    onFocus={() => hoverOn(p)}
+                    onBlur={hoverOff}
                     className={`crop-frame group flex flex-col items-start gap-1 rounded-[3px] border p-2.5 text-left transition-colors ${
                       active
                         ? "border-signal ring-1 ring-signal bg-signal/5"

@@ -51,6 +51,16 @@ export interface EmojiEl extends BaseEl {
 
 export type DesignElement = ImageEl | TextEl | EmojiEl;
 
+/** Hjälplinje som visar var en placering hamnar (hover i Placering-fliken). */
+export interface PlacementHint {
+  view: ViewKey;
+  x: number; // topp-vänster 0..1 av canvasen
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+}
+
 export interface DesignSnapshot {
   id: string;
   name: string;
@@ -74,6 +84,8 @@ interface EditorState {
   designName: string;
   past: DesignElement[][];
   future: DesignElement[][];
+  hint: PlacementHint | null;
+  lastSavedSig: string | null;
 
   // derived
   garment: () => Garment;
@@ -81,6 +93,8 @@ interface EditorState {
   printAreaCm2: () => number;
   price: () => PriceBreakdown;
   serialize: () => DesignSnapshot;
+  signature: () => string;
+  markSaved: () => void;
   setName: (n: string) => void;
 
   // actions
@@ -101,6 +115,7 @@ interface EditorState {
   loadSnapshot: (s: DesignSnapshot) => void;
   undo: () => void;
   redo: () => void;
+  setHint: (h: PlacementHint | null) => void;
 }
 
 export function uid(prefix = "el"): string {
@@ -129,6 +144,29 @@ export function usePrintArea(): number {
   );
 }
 
+/** True när designen har innehåll och skiljer sig från senast sparade. */
+export function useIsDirty(): boolean {
+  const elements = useEditor((s) => s.elements);
+  const garmentId = useEditor((s) => s.garmentId);
+  const colorIndex = useEditor((s) => s.colorIndex);
+  const size = useEditor((s) => s.size);
+  const qty = useEditor((s) => s.qty);
+  const designName = useEditor((s) => s.designName);
+  const lastSavedSig = useEditor((s) => s.lastSavedSig);
+  return useMemo(() => {
+    if (elements.length === 0) return false;
+    const sig = JSON.stringify({
+      g: garmentId,
+      c: colorIndex,
+      z: size,
+      q: qty,
+      n: designName,
+      e: elements,
+    });
+    return sig !== lastSavedSig;
+  }, [elements, garmentId, colorIndex, size, qty, designName, lastSavedSig]);
+}
+
 const MAX_HISTORY = 40;
 
 export const useEditor = create<EditorState>((set, get) => {
@@ -154,6 +192,8 @@ export const useEditor = create<EditorState>((set, get) => {
     designName: "Namnlös design",
     past: [],
     future: [],
+    hint: null,
+    lastSavedSig: null,
 
     garment: () => getGarment(get().garmentId),
     selected: () => get().elements.find((e) => e.id === get().selectedId) ?? null,
@@ -177,6 +217,19 @@ export const useEditor = create<EditorState>((set, get) => {
         updatedAt: Date.now(),
       };
     },
+    // Stabil signatur av det som är värt att spara (utan id/tidsstämpel).
+    signature: () => {
+      const s = get();
+      return JSON.stringify({
+        g: s.garmentId,
+        c: s.colorIndex,
+        z: s.size,
+        q: s.qty,
+        n: s.designName,
+        e: s.elements,
+      });
+    },
+    markSaved: () => set({ lastSavedSig: get().signature() }),
     setName: (n) => set({ designName: n }),
 
     setGarment: (id) => {
@@ -335,5 +388,6 @@ export const useEditor = create<EditorState>((set, get) => {
         selectedId: null,
       });
     },
+    setHint: (h) => set({ hint: h }),
   };
 });

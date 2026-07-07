@@ -17,8 +17,12 @@ import { TextTool } from "./TextTool";
 import { PlacementTool } from "./PlacementTool";
 import { LayerPanel } from "./LayerPanel";
 import { PricePanel } from "./PricePanel";
+import { SaveReminder } from "./SaveReminder";
 
 type Tab = "plagg" | "bild" | "text" | "placering" | "lager";
+
+// Autosparat utkast — så designen inte försvinner vid omladdning/navigering.
+const DRAFT_KEY = "snabbtryck.draft.v1";
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "plagg", label: "Plagg", icon: "▧" },
@@ -68,7 +72,11 @@ export function EditorShell() {
       // Försök hämta från kontot (DB) först, fall tillbaka på lokalt utkast.
       getDesignRemote(designId).then((remote) => {
         const d = remote ?? getDesign(designId);
-        if (d) loadSnapshot(d);
+        if (d) {
+          loadSnapshot(d);
+          // Nyladdad sparad design = ren (visa inte "osparade ändringar" direkt).
+          useEditor.getState().markSaved();
+        }
       });
     } else if (shared) {
       const d = getShared(shared);
@@ -85,6 +93,60 @@ export function EditorShell() {
       setGarment(garment);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Återställ senaste utkast vid omladdning (om ingen specifik design öppnas och
+  // storen är tom — annars behålls den redan pågående designen vid klient-nav).
+  useEffect(() => {
+    const fromUrl = ["design", "shared", "template", "org", "garment"].some((k) =>
+      params.get(k)
+    );
+    if (fromUrl) return;
+    if (useEditor.getState().elements.length > 0) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const snap = JSON.parse(raw);
+      if (snap && Array.isArray(snap.elements) && snap.elements.length > 0) {
+        loadSnapshot(snap);
+      }
+    } catch {
+      /* trasigt/otillgängligt utkast — ignorera */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autospara utkastet (debounce) så inget går förlorat mellan sidor/vyer.
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const unsub = useEditor.subscribe(() => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        try {
+          localStorage.setItem(
+            DRAFT_KEY,
+            JSON.stringify(useEditor.getState().serialize())
+          );
+        } catch {
+          /* localStorage-kvot (t.ex. stor bild) — hoppa tyst över */
+        }
+      }, 500);
+    });
+    return () => {
+      if (t) clearTimeout(t);
+      unsub();
+    };
+  }, []);
+
+  // Varna innan sidan lämnas/laddas om med osparad design ("glöm inte spara").
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (useEditor.getState().elements.length === 0) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
   return (
@@ -109,6 +171,8 @@ export function EditorShell() {
           </button>
         </div>
       </header>
+
+      <SaveReminder />
 
       <div className="flex min-h-0 flex-1">
         {/* LEFT (desktop) */}
