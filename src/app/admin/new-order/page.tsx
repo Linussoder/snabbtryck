@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEditor, computePrintArea } from "@/lib/store";
+import { useEditor, computePrintArea, DesignSnapshot } from "@/lib/store";
 import { computePrice } from "@/lib/pricing";
 import { withOverride } from "@/lib/settings";
 import { useSettings } from "@/components/settings/SettingsProvider";
@@ -10,6 +10,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { kr } from "@/lib/format";
+import { buildPrintFile, printViews, PrintFile } from "@/lib/printfile";
+import { fetchDesignsForUser } from "@/lib/admin-data";
 import { DesignCanvas } from "@/components/editor/DesignCanvas";
 import { GarmentPicker } from "@/components/editor/GarmentPicker";
 import { ImageTool } from "@/components/editor/ImageTool";
@@ -54,8 +56,12 @@ export default function NewOrder() {
   const elements = useEditor((s) => s.elements);
   const serialize = useEditor((s) => s.serialize);
   const clearAll = useEditor((s) => s.clearAll);
+  const loadSnapshot = useEditor((s) => s.loadSnapshot);
 
   const [tab, setTab] = useState<Tab>("plagg");
+  const [custDesigns, setCustDesigns] = useState<DesignSnapshot[]>([]);
+  const [preview, setPreview] = useState<PrintFile[] | null>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   // Kund
   const [selectedCust, setSelectedCust] = useState<Cust | null>(null);
@@ -112,6 +118,19 @@ export default function NewOrder() {
     setSearch("");
     const parts = (c.name ?? "").split(" ");
     setContact((f) => ({ ...f, firstName: parts[0] ?? "", lastName: parts.slice(1).join(" "), email: c.email }));
+    fetchDesignsForUser(c.id).then(setCustDesigns).catch(() => setCustDesigns([]));
+  }
+
+  // Tryckfil-förhandsvisning: bygg den faktiska DTF-transferfilen per vy.
+  async function showPreview() {
+    if (!elements.length) { push({ kind: "error", title: "Ingen design att förhandsvisa" }); return; }
+    setPreviewing(true);
+    try {
+      const design = serialize();
+      const files = (await Promise.all(printViews(design).map((v) => buildPrintFile(design, v)))).filter(Boolean) as PrintFile[];
+      setPreview(files);
+    } catch { push({ kind: "error", title: "Kunde inte generera tryckfil" }); }
+    setPreviewing(false);
   }
 
   async function create() {
@@ -205,6 +224,19 @@ export default function NewOrder() {
                   )}
                 </div>
               )}
+              {selectedCust && custDesigns.length > 0 && (
+                <div className="mb-2">
+                  <p className="spec mb-1 text-[10px] text-muted">Kundens sparade designer — klicka för att ladda in:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {custDesigns.map((d) => (
+                      <button key={d.id} onClick={() => { loadSnapshot(d); push({ kind: "success", title: "Design laddad", msg: d.name }); }}
+                        className="rounded-full border border-line px-2.5 py-1 text-xs hover:border-signal">
+                        {d.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <p className="spec mb-2 text-[10px] text-muted">…eller fyll i uppgifter för walk-in:</p>
               <div className="grid grid-cols-2 gap-2">
                 <input value={contact.firstName} onChange={(e) => setContact({ ...contact, firstName: e.target.value })} placeholder="Förnamn" className="field" />
@@ -242,6 +274,9 @@ export default function NewOrder() {
                 <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setPrintFile(e.target.files?.[0] ?? null)} />
               </label>
               <p className="spec mt-1 text-[10px] text-muted">Bifogas ordern som tryckfil. Kan kombineras med designen ovan.</p>
+              <button onClick={showPreview} disabled={previewing} className="btn btn-ghost btn-sm mt-2 w-full">
+                {previewing ? "Genererar…" : "Förhandsvisa tryckfil (300 DPI)"}
+              </button>
             </section>
 
             {/* Pris */}
@@ -290,6 +325,36 @@ export default function NewOrder() {
           </div>
         </aside>
       </div>
+
+      {/* Tryckfil-förhandsvisning */}
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4" onClick={() => setPreview(null)}>
+          <div className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-paper p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="head text-lg uppercase">Tryckfil · 300 DPI</h2>
+              <button onClick={() => setPreview(null)} className="text-muted hover:text-ink">×</button>
+            </div>
+            {preview.length === 0 ? (
+              <p className="text-sm text-muted">Inga element att generera tryckfil av.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {preview.map((f) => (
+                  <div key={f.view} className="card overflow-hidden">
+                    <div className="grid-field bg-paper-2 p-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={f.dataUrl} alt={`Tryckfil ${f.view}`} className="mx-auto max-h-56 w-auto" style={{ imageRendering: "pixelated" }} />
+                    </div>
+                    <div className="flex items-center justify-between border-t border-line px-3 py-2">
+                      <span className="spec text-[11px] text-muted">{f.view} · {f.widthCm}×{f.heightCm} cm</span>
+                      <a href={f.dataUrl} download={`tryckfil-${f.view}.png`} className="spec text-[11px] text-signal underline">Ladda ner</a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

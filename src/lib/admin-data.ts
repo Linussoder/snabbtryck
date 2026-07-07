@@ -75,6 +75,21 @@ export async function fetchAllDesigns(): Promise<{ id: string; name: string; use
   return (data ?? []) as { id: string; name: string; user_id: string }[];
 }
 
+// Sparade designer för en viss kund (admin via RLS). Mappas till DesignSnapshot.
+import type { DesignSnapshot } from "./store";
+export async function fetchDesignsForUser(userId: string): Promise<DesignSnapshot[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("designs")
+    .select("*")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+  return (data ?? []).map((r) => {
+    const row = r as { id: string; name: string; garment_id: string; color_index: number; size: string; qty: number; elements: DesignSnapshot["elements"]; updated_at: string };
+    return { id: row.id, name: row.name, garmentId: row.garment_id, colorIndex: row.color_index, size: row.size, qty: row.qty, elements: row.elements, updatedAt: new Date(row.updated_at).getTime() };
+  });
+}
+
 /* ---------------- Recensioner (admin-moderering) ---------------- */
 import type { Review } from "./reviews";
 export type { Review };
