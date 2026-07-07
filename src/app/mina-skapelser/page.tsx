@@ -33,7 +33,9 @@ export default function MinaSkapelser() {
   const [ready, setReady] = useState(false);
   const [emailFor, setEmailFor] = useState<DesignSnapshot | null>(null);
 
-  // Designer + ordrar från databasen (RLS ger bara mina egna).
+  // Designer + ordrar från databasen. Filtrera ALLTID på user_id — annars ser
+  // en admin allas ordrar här (orders-RLS är user_id = auth.uid() OR is_admin).
+  // Detta är kundens egen sida; alla ordrar hanteras i admin-panelen.
   const refresh = useCallback(async () => {
     if (!user) {
       setDesigns([]);
@@ -43,7 +45,11 @@ export default function MinaSkapelser() {
     const supabase = createClient();
     const [designsRes, ordersRes] = await Promise.all([
       getDesignsRemote(),
-      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
     ]);
     setDesigns(designsRes);
     setOrders(
