@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
 import { DesignThumb } from "@/components/ui/DesignThumb";
+import { PrintSpecList } from "@/components/PrintSpecList";
 import { ChevronMark } from "@/components/ui/ChevronMark";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -113,6 +114,12 @@ export default function OrderPage() {
               ))}
             </div>
             <button onClick={share} className="btn btn-outline btn-sm mt-3">Dela på sociala medier</button>
+          </section>
+
+          {/* Exakta tryckmått per logga/text */}
+          <section>
+            <h2 className="font-display text-lg uppercase mb-3">Tryckmått</h2>
+            <PrintSpecList design={order.design} />
           </section>
 
           {/* status timeline */}

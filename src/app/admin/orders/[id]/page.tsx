@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DesignThumb } from "@/components/ui/DesignThumb";
+import { PrintSpecList } from "@/components/PrintSpecList";
 import { useToast } from "@/components/ui/Toast";
 import { StatusBadge } from "@/components/admin/ui";
 import { getGarment, VIEW_LABEL } from "@/lib/garments";
@@ -257,6 +258,11 @@ export default function AdminOrderDetail() {
               <span className="head uppercase">Totalt {order.business ? "(exkl. moms)" : "(inkl. moms)"}</span>
               <span className="font-display text-2xl">{kr(order.total)}</span>
             </div>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="eyebrow mb-3">Tryckspecifikation</h2>
+            <PrintSpecList design={order.design} />
           </section>
 
           <section className="card p-5">
