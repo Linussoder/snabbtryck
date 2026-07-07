@@ -84,10 +84,39 @@ export async function fetchDesignsForUser(userId: string): Promise<DesignSnapsho
     .select("*")
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
-  return (data ?? []).map((r) => {
-    const row = r as { id: string; name: string; garment_id: string; color_index: number; size: string; qty: number; elements: DesignSnapshot["elements"]; updated_at: string };
-    return { id: row.id, name: row.name, garmentId: row.garment_id, colorIndex: row.color_index, size: row.size, qty: row.qty, elements: row.elements, updatedAt: new Date(row.updated_at).getTime() };
+  return (data ?? []).map(rowToSnapshot);
+}
+
+type DesignRow = { id: string; name: string; garment_id: string; color_index: number; size: string; qty: number; elements: DesignSnapshot["elements"]; updated_at: string };
+function rowToSnapshot(r: unknown): DesignSnapshot {
+  const row = r as DesignRow;
+  return { id: row.id, name: row.name, garmentId: row.garment_id, colorIndex: row.color_index, size: row.size, qty: row.qty, elements: row.elements, updatedAt: new Date(row.updated_at).getTime() };
+}
+
+// Admin-mallar: sparade i designs med is_template=true, ägda av inloggad admin.
+export async function fetchTemplates(): Promise<DesignSnapshot[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("designs").select("*").eq("is_template", true).order("updated_at", { ascending: false });
+  return (data ?? []).map(rowToSnapshot);
+}
+
+export async function saveTemplate(d: DesignSnapshot, name: string): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "ej inloggad" };
+  const { error } = await supabase.from("designs").insert({
+    id: `tpl_${Math.random().toString(36).slice(2, 11)}`,
+    user_id: user.id,
+    name,
+    garment_id: d.garmentId,
+    color_index: d.colorIndex,
+    size: d.size,
+    qty: d.qty,
+    elements: d.elements,
+    is_template: true,
+    updated_at: new Date().toISOString(),
   });
+  return error ? { error: error.message } : {};
 }
 
 /* ---------------- Recensioner (admin-moderering) ---------------- */

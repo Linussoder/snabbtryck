@@ -67,6 +67,7 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
   ) {
     if (!interactive) return;
     e.stopPropagation();
+    if (el.locked) { select(id); return; } // låst element: markerbart men ej dragbart
     const node = ref.current;
     if (!node) return;
     const r = node.getBoundingClientRect();
@@ -217,7 +218,13 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
             >
               <ElementVisual el={el} />
 
-              {selected && interactive && (
+              {selected && interactive && el.locked && (
+                <div className="pointer-events-none absolute -inset-1 border border-dashed border-muted" title="Låst">
+                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-paper text-[10px]">🔒</span>
+                </div>
+              )}
+
+              {selected && interactive && !el.locked && (
                 <>
                   <div className="pointer-events-none absolute -inset-1 border border-signal" />
                   {/* rotate */}

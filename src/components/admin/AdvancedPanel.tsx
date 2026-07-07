@@ -205,6 +205,10 @@ export function AdvancedPanel() {
               <button onClick={() => duplicate(sel.id)} className="btn btn-ghost btn-sm">Kopia</button>
               <button onClick={() => removeEl(sel.id)} className="btn btn-ghost btn-sm text-bad">Ta bort</button>
             </div>
+            <button onClick={() => updateEl(sel.id, { locked: !sel.locked })}
+              className={`btn btn-sm mt-1.5 w-full ${sel.locked ? "btn-primary" : "btn-outline"}`}>
+              {sel.locked ? "🔒 Låst — lås upp" : "Lås element"}
+            </button>
           </section>
 
           {/* Flytta till vy */}

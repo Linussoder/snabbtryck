@@ -22,6 +22,7 @@ interface BaseEl {
   w: number; // normaliserad bredd 0..1 av plaggets bredd
   ar: number; // höjd/bredd-förhållande (canvas-px)
   rotation: number; // grader
+  locked?: boolean; // låst mot flytt/skala/rotation (admin-verktyg)
 }
 
 export interface ImageEl extends BaseEl {

@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { kr } from "@/lib/format";
 import { buildPrintFile, printViews, PrintFile } from "@/lib/printfile";
-import { fetchDesignsForUser } from "@/lib/admin-data";
+import { fetchDesignsForUser, fetchTemplates, saveTemplate } from "@/lib/admin-data";
 import { DesignCanvas } from "@/components/editor/DesignCanvas";
 import { GarmentPicker } from "@/components/editor/GarmentPicker";
 import { ImageTool } from "@/components/editor/ImageTool";
@@ -60,8 +60,21 @@ export default function NewOrder() {
 
   const [tab, setTab] = useState<Tab>("plagg");
   const [custDesigns, setCustDesigns] = useState<DesignSnapshot[]>([]);
+  const [templates, setTemplates] = useState<DesignSnapshot[]>([]);
   const [preview, setPreview] = useState<PrintFile[] | null>(null);
   const [previewing, setPreviewing] = useState(false);
+
+  useEffect(() => { fetchTemplates().then(setTemplates).catch(() => {}); }, []);
+
+  async function saveAsTemplate() {
+    if (!elements.length) { push({ kind: "error", title: "Ingen design att spara" }); return; }
+    const name = window.prompt("Namn på mallen:", serialize().name);
+    if (!name) return;
+    const { error } = await saveTemplate(serialize(), name);
+    if (error) { push({ kind: "error", title: "Kunde inte spara mall", msg: error }); return; }
+    push({ kind: "success", title: "Mall sparad", msg: name });
+    fetchTemplates().then(setTemplates).catch(() => {});
+  }
 
   // Kund
   const [selectedCust, setSelectedCust] = useState<Cust | null>(null);
@@ -202,6 +215,26 @@ export default function NewOrder() {
         {/* Orderpanel */}
         <aside className="hidden w-[340px] flex-none flex-col overflow-y-auto thin-scroll border-l border-line xl:flex">
           <div className="space-y-5 p-4">
+            {/* Mallar */}
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="eyebrow">Mallar</h2>
+                <button onClick={saveAsTemplate} className="spec text-[11px] text-signal underline">+ Spara nuvarande</button>
+              </div>
+              {templates.length === 0 ? (
+                <p className="spec text-[10px] text-muted">Inga mallar än. Bygg en design och spara som mall för snabb återanvändning i butik.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {templates.map((t) => (
+                    <button key={t.id} onClick={() => { loadSnapshot(t); push({ kind: "success", title: "Mall laddad", msg: t.name }); }}
+                      className="rounded-full border border-line px-2.5 py-1 text-xs hover:border-signal">
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* Kund */}
             <section>
               <h2 className="eyebrow mb-2">Kund</h2>
