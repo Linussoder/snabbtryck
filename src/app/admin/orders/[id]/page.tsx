@@ -9,6 +9,7 @@ import { PrintSpecList } from "@/components/PrintSpecList";
 import { useToast } from "@/components/ui/Toast";
 import { StatusBadge } from "@/components/admin/ui";
 import { getGarment, VIEW_LABEL } from "@/lib/garments";
+import { evaluateQuality } from "@/lib/dpi";
 import { buildPrintFile, printViews } from "@/lib/printfile";
 import { downloadDataUrl } from "@/lib/gangsheet";
 import { kr } from "@/lib/format";
@@ -37,6 +38,29 @@ export default function AdminOrderDetail() {
   const [msgInput, setMsgInput] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
   const [genView, setGenView] = useState<string | null>(null);
+  const [upscaling, setUpscaling] = useState<string | null>(null);
+
+  async function upscaleElement(elId: string, src: string) {
+    if (!order || upscaling) return;
+    setUpscaling(elId);
+    try {
+      const { upscaleImage } = await import("@/lib/upscale");
+      const up = await upscaleImage(src, 2);
+      const elements = order.design.elements.map((e) =>
+        e.id === elId ? { ...e, src: up.src, naturalW: up.width, naturalH: up.height } : e
+      );
+      const design = { ...order.design, elements };
+      const supabase = createClient();
+      const { error } = await supabase.from("orders").update({ design }).eq("id", order.id);
+      if (error) throw error;
+      setOrder({ ...order, design });
+      push({ kind: "success", title: "Bild uppskalad (AI)", msg: `Ny upplösning ${up.width}×${up.height} px` });
+    } catch {
+      push({ kind: "error", title: "Kunde inte skala upp bilden" });
+    } finally {
+      setUpscaling(null);
+    }
+  }
 
   async function genPrintFile(view: "front" | "back" | "sleeve") {
     if (!order || genView) return;
@@ -271,6 +295,46 @@ export default function AdminOrderDetail() {
             <h2 className="eyebrow mb-3">Tryckspecifikation</h2>
             <PrintSpecList design={order.design} />
           </section>
+
+          {(() => {
+            const g = getGarment(order.design.garmentId);
+            const images = order.design.elements.filter((e) => e.type === "image");
+            if (!images.length) return null;
+            return (
+              <section className="card p-5">
+                <h2 className="eyebrow mb-3">Bildkvalitet</h2>
+                <ul className="space-y-2">
+                  {images.map((el) => {
+                    const im = el as typeof el & { src: string; naturalW: number; naturalH: number };
+                    const wcm = im.w * g.printRefWidthCm;
+                    const q = evaluateQuality(im.naturalW, im.naturalH, wcm, wcm * im.ar);
+                    const color =
+                      q.level === "good" ? "var(--color-good)" : q.level === "warn" ? "var(--color-warn)" : "var(--color-bad)";
+                    return (
+                      <li key={im.id} className="flex flex-wrap items-center gap-3">
+                        <img src={im.src} alt="" className="h-12 w-12 flex-none rounded-[3px] border border-line object-contain" />
+                        <span className="spec inline-flex items-center gap-1 text-[12px]" style={{ color }}>
+                          <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+                          {Math.round(q.dpi)} DPI · {im.naturalW}×{im.naturalH} px
+                        </span>
+                        <button
+                          onClick={() => upscaleElement(im.id, im.src)}
+                          disabled={upscaling !== null}
+                          className="btn btn-outline btn-sm ml-auto"
+                          title="Skala upp bilden med AI (i webbläsaren) för högre DPI"
+                        >
+                          {upscaling === im.id ? "Skalar upp…" : "✦ AI-skala upp 2×"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="spec mt-2 text-[10px] text-muted-2">
+                  AI-uppskalning körs i webbläsaren (kan ta några sekunder) och ersätter bilden på ordern.
+                </p>
+              </section>
+            );
+          })()}
 
           <section className="card p-5">
             <h2 className="eyebrow mb-3">Tryckfiler</h2>

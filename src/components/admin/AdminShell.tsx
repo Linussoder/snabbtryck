@@ -12,6 +12,7 @@ import { kr } from "@/lib/format";
 const NAV: { href: string; label: string; icon: React.ReactNode }[] = [
   { href: "/admin", label: "Översikt", icon: <Icon d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" /> },
   { href: "/admin/orders", label: "Ordrar", icon: <Icon d="M4 4h16v4H4zM4 10h16v10H4zM8 14h8" /> },
+  { href: "/admin/new-order", label: "Skapa order", icon: <Icon d="M12 5v14M5 12h14" /> },
   { href: "/admin/production", label: "Produktion", icon: <Icon d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M6 14h12v7H6z" /> },
   { href: "/admin/customers", label: "Kunder", icon: <Icon d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" /> },
   { href: "/admin/leads", label: "Leads", icon: <Icon d="M22 6l-10 7L2 6M2 6h20v12H2z" /> },
