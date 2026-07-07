@@ -5,10 +5,11 @@
 // beskuren runt trycket. Detta är den faktiska transferfilen som skickas till
 // DTF-skrivaren (till skillnad från originalbilderna som lagras separat).
 
-import { DesignSnapshot, DesignElement } from "./store";
+import { DesignSnapshot, DesignElement, TextEl } from "./store";
 import { getGarment, ViewKey } from "./garments";
 import { fontByName } from "./fonts";
 import { textLines, CHAR_W } from "./text";
+import { ensureCustomFont } from "./customfont";
 
 const DPI = 300;
 const pxFromMm = (mm: number) => Math.round((mm / 25.4) * DPI);
@@ -105,25 +106,34 @@ function drawElement(
     ctx.fillText(el.char, 0, 0);
   } else if (el.type === "text") {
     const font = fontByName(el.font);
+    const family = el.customFont ?? `${font.family}, sans-serif`;
     const lines = textLines(el.text);
     const longest = Math.max(1, ...lines.map((l) => l.length || 1));
     const fontSize = w / (longest * CHAR_W);
     const lh = fontSize * el.lineHeight;
     const strokeW = el.strokeW > 0 ? (el.strokeW / 100) * fontSize : 0;
-    ctx.font = `700 ${fontSize}px ${font.family}, sans-serif`;
+    ctx.font = `700 ${fontSize}px ${family}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const startY = -((lines.length - 1) * lh) / 2;
     lines.forEach((line, i) => {
       const y = startY + i * lh;
+      ctx.shadowColor = "transparent";
       if (strokeW) {
         ctx.lineJoin = "round";
         ctx.strokeStyle = el.stroke;
         ctx.lineWidth = strokeW;
         ctx.strokeText(line, 0, y);
       }
+      if (el.shadow) {
+        ctx.shadowColor = "rgba(0,0,0,0.55)";
+        ctx.shadowBlur = fontSize * 0.06;
+        ctx.shadowOffsetX = fontSize * 0.05;
+        ctx.shadowOffsetY = fontSize * 0.05;
+      }
       ctx.fillStyle = el.color;
       ctx.fillText(line, 0, y);
+      ctx.shadowColor = "transparent";
     });
   }
   ctx.restore();
@@ -162,9 +172,14 @@ export async function buildPrintFile(
   const wPx = Math.max(1, Math.round(maxX - minX));
   const hPx = Math.max(1, Math.round(maxY - minY));
 
-  // Ladda typsnitt + bilder.
+  // Ladda typsnitt (inkl. ev. egna uppladdade) + bilder.
   await ensureFonts(
     Array.from(new Set(els.filter((e) => e.type === "text").map((e) => fontByName((e as { font: string }).font).family)))
+  );
+  await Promise.all(
+    els
+      .filter((e): e is TextEl => e.type === "text" && !!(e as TextEl).customFont && !!(e as TextEl).fontData)
+      .map((e) => ensureCustomFont(e.customFont as string, e.fontData as string))
   );
   const imgs = new Map<string, HTMLImageElement>();
   await Promise.all(

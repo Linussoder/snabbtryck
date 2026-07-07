@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useEditor, ImageEl } from "@/lib/store";
+import { useEditor, ImageEl, TextEl } from "@/lib/store";
 import { removeBackgroundLocal } from "@/lib/bgremove";
 import { upscaleImage } from "@/lib/upscale";
+import { ensureCustomFont, familyFromFilename, readFontFile } from "@/lib/customfont";
 import { useToast } from "@/components/ui/Toast";
 
 // Admin-kraftpanel: allt kundverktyget INTE har. Fri uppladdning utan varningar,
@@ -127,6 +128,21 @@ export function AdvancedPanel() {
     setBusy(null);
   }
 
+  async function uploadFont(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !sel) return;
+    try {
+      const dataUrl = await readFontFile(file);
+      const family = familyFromFilename(file.name);
+      await ensureCustomFont(family, dataUrl);
+      updateEl(sel.id, { customFont: family, fontData: dataUrl });
+      push({ kind: "success", title: "Typsnitt laddat", msg: family });
+    } catch { push({ kind: "error", title: "Kunde inte läsa typsnittet" }); }
+  }
+
+  const txt = sel?.type === "text" ? (sel as TextEl) : null;
+
   const refCm = garment.printRefWidthCm;
   const wCm = sel ? sel.w * refCm : 0;
   const hCm = sel ? wCm * sel.ar : 0;
@@ -182,6 +198,28 @@ export function AdvancedPanel() {
                 <span className="spec text-[11px] text-muted">Tryck-DPI vid {wCm.toFixed(1)} cm</span>
                 <span className={`spec text-sm font-bold ${dpiBadge.c}`}>{dpi} · {dpiBadge.t}</span>
               </div>
+            </section>
+          )}
+
+          {/* Texteffekter */}
+          {txt && (
+            <section>
+              <h3 className="eyebrow mb-2">Texteffekter</h3>
+              <button onClick={() => updateEl(txt.id, { shadow: !txt.shadow })}
+                className={`btn btn-sm w-full ${txt.shadow ? "btn-primary" : "btn-outline"}`}>
+                {txt.shadow ? "🌑 Skugga på — ta bort" : "Lägg till skugga"}
+              </button>
+              <label className="btn btn-outline btn-sm mt-2 w-full cursor-pointer">
+                {txt.customFont ? "Byt eget typsnitt" : "Ladda upp eget typsnitt"}
+                <input type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={uploadFont} />
+              </label>
+              {txt.customFont && (
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span className="spec truncate text-[10px] text-muted">{txt.customFont}</span>
+                  <button onClick={() => updateEl(txt.id, { customFont: undefined, fontData: undefined })} className="spec flex-none text-[10px] text-muted underline">Återställ</button>
+                </div>
+              )}
+              <p className="spec mt-1 text-[10px] text-muted">.ttf/.otf/.woff/.woff2 — bäddas in i designen och används även i tryckfilen.</p>
             </section>
           )}
 

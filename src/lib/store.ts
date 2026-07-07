@@ -43,6 +43,9 @@ export interface TextEl extends BaseEl {
   strokeW: number; // 0..8
   curve: number; // -100..100 bågform
   lineHeight: number;
+  shadow?: boolean; // mjuk skugga bakom texten
+  customFont?: string; // egen uppladdad font-family (åsidosätter font)
+  fontData?: string; // data-URL för egen font (så designen bär sitt typsnitt)
 }
 
 export interface EmojiEl extends BaseEl {
@@ -292,6 +295,7 @@ export const useEditor = create<EditorState>((set, get) => {
           strokeW: 0,
           curve: 0,
           lineHeight: 1.05,
+          shadow: false,
         } as TextEl,
       ]);
       set({ selectedId: id });

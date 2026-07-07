@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/Toast";
 import { kr } from "@/lib/format";
 import { buildPrintFile, printViews, PrintFile } from "@/lib/printfile";
 import { fetchDesignsForUser, fetchTemplates, saveTemplate } from "@/lib/admin-data";
+import { hasVars, applyVars } from "@/lib/vars";
 import { DesignCanvas } from "@/components/editor/DesignCanvas";
 import { GarmentPicker } from "@/components/editor/GarmentPicker";
 import { ImageTool } from "@/components/editor/ImageTool";
@@ -97,9 +98,16 @@ export default function NewOrder() {
   const [paid, setPaid] = useState(false);
   const [payMethod, setPayMethod] = useState("");
 
+  // Lagtryck: namn/nummer-roster (varje person → egen tryckfil)
+  const [roster, setRoster] = useState<{ name: string; number: string; size: string }[]>([]);
+  const teamMode = roster.length > 0;
+  const designHasVars = useMemo(() => hasVars(serialize()), [elements]); // eslint-disable-line react-hooks/exhaustive-deps
+  const midSize = () => garment.sizes[Math.floor(garment.sizes.length / 2)] ?? "M";
+
   // Färdig tryckfil (alternativ till design)
   const [printFile, setPrintFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
+  const [progress, setProgress] = useState("");
 
   // Starta rent
   useEffect(() => { clearAll(); }, [clearAll]);
@@ -109,12 +117,18 @@ export default function NewOrder() {
   const autoTotal = useMemo(() => {
     const g = withOverride(garment, products);
     const area = computePrintArea(elements, g);
+    if (teamMode) {
+      // Ett plagg per person, buntpris på hela lagets antal.
+      const p = computePrice(g, area, roster.length, pricing);
+      const sub = business ? p.subtotalExclVat : p.subtotalInclVat;
+      return Math.max(0, Math.round(sub - discount));
+    }
     const sum = rows.reduce((acc, r) => {
       const p = computePrice(g, area, Math.max(1, r.qty), pricing);
       return acc + (business ? p.subtotalExclVat : p.subtotalInclVat);
     }, 0);
     return Math.max(0, Math.round(sum - discount));
-  }, [garment, products, elements, rows, pricing, business, discount]);
+  }, [garment, products, elements, rows, roster.length, teamMode, pricing, business, discount]);
 
   const total = manualPrice ? Math.round(manualTotal) : autoTotal;
 
@@ -139,7 +153,8 @@ export default function NewOrder() {
     if (!elements.length) { push({ kind: "error", title: "Ingen design att förhandsvisa" }); return; }
     setPreviewing(true);
     try {
-      const design = serialize();
+      const base = serialize();
+      const design = teamMode ? applyVars(base, { name: roster[0].name || "Namn", number: roster[0].number || "00" }) : base;
       const files = (await Promise.all(printViews(design).map((v) => buildPrintFile(design, v)))).filter(Boolean) as PrintFile[];
       setPreview(files);
     } catch { push({ kind: "error", title: "Kunde inte generera tryckfil" }); }
@@ -150,12 +165,17 @@ export default function NewOrder() {
     if (creating) return;
     if (!contact.email.trim()) { push({ kind: "error", title: "Ange kundens e-post" }); return; }
     if (!printFile && !elements.length) { push({ kind: "error", title: "Lägg till en design eller ladda upp en tryckfil" }); return; }
+    if (teamMode && roster.some((r) => !r.name.trim() && !r.number.trim())) {
+      push({ kind: "error", title: "Fyll i namn eller nummer för alla i laget" }); return;
+    }
     setCreating(true);
     const supabase = createClient();
     const id = rid("ord_");
     const ref = "TR-" + Math.floor(100000 + Math.random() * 899999);
     const design = serialize();
-    const lines = rows.map((r) => ({ garmentId: garment.id, colorIndex, size: r.size, qty: Math.max(1, r.qty) }));
+    const lines = teamMode
+      ? roster.map((r) => ({ garmentId: garment.id, colorIndex, size: r.size, qty: 1 }))
+      : rows.map((r) => ({ garmentId: garment.id, colorIndex, size: r.size, qty: Math.max(1, r.qty) }));
 
     const { error } = await supabase.from("orders").insert({
       id, ref,
@@ -167,6 +187,7 @@ export default function NewOrder() {
       shipping: { method: "Manuell (admin)" },
       design,
       lines,
+      roster: teamMode ? roster : [],
       paid,
       payment_method: payMethod || (paid ? "manuell" : null),
       discount_amount: manualPrice ? 0 : Math.round(discount),
@@ -174,8 +195,30 @@ export default function NewOrder() {
     });
     if (error) { setCreating(false); push({ kind: "error", title: "Kunde inte skapa order", msg: error.message }); return; }
 
+    // Lagtryck: generera + ladda upp en tryckfil per person (variabler ersatta).
+    if (teamMode && user) {
+      const files: { elementId: string; path: string; label: string; view: string }[] = [];
+      for (let i = 0; i < roster.length; i++) {
+        const r = roster[i];
+        setProgress(`Tryckfil ${i + 1}/${roster.length}…`);
+        const pd = applyVars(design, { name: r.name, number: r.number });
+        for (const v of printViews(pd)) {
+          try {
+            const pf = await buildPrintFile(pd, v);
+            if (!pf) continue;
+            const blob = await (await fetch(pf.dataUrl)).blob();
+            const path = `${user.id}/${id}/${i + 1}-${v}.png`;
+            const { error: upErr } = await supabase.storage.from("artwork").upload(path, blob, { upsert: true, contentType: "image/png" });
+            if (!upErr) files.push({ elementId: `p${i + 1}`, path, label: `${r.name || "?"} #${r.number || "-"} · ${v}`, view: v });
+          } catch { /* hoppa över trasig */ }
+        }
+      }
+      setProgress("");
+      if (files.length) await supabase.from("orders").update({ print_files: files }).eq("id", id);
+    }
+
     // Färdig tryckfil → ladda upp till Storage under adminens mapp.
-    if (printFile && user) {
+    if (printFile && user && !teamMode) {
       const ext = printFile.name.split(".").pop() || "png";
       const path = `${user.id}/${id}/tryckfil.${ext}`;
       const { error: upErr } = await supabase.storage.from("artwork").upload(path, printFile, { upsert: true, contentType: printFile.type });
@@ -283,8 +326,8 @@ export default function NewOrder() {
             </section>
 
             {/* Rader */}
-            <section>
-              <h2 className="eyebrow mb-2">Storlekar & antal — {garment.name}</h2>
+            <section className={teamMode ? "opacity-40" : ""}>
+              <h2 className="eyebrow mb-2">Storlekar & antal — {garment.name}{teamMode && <span className="ml-1 spec text-[10px] normal-case text-muted">(ersätts av laget nedan)</span>}</h2>
               <div className="space-y-2">
                 {rows.map((r, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -297,6 +340,38 @@ export default function NewOrder() {
                 ))}
                 <button onClick={() => setRows([...rows, { size: garment.sizes[0], qty: 1 }])} className="btn btn-ghost btn-sm">+ Rad</button>
               </div>
+            </section>
+
+            {/* Lagtryck: namn & nummer */}
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="eyebrow">Lagtryck — namn & nummer</h2>
+                {designHasVars
+                  ? <span className="spec text-[10px] text-good">✓ variabler i designen</span>
+                  : <span className="spec text-[10px] text-warn">inga {"{namn}/{nummer}"}</span>}
+              </div>
+              <p className="spec mb-2 text-[10px] text-muted">
+                Lägg text med <b>{"{namn}"}</b> och/eller <b>{"{nummer}"}</b> i designen. Varje person nedan får en egen tryckfil med sina värden ifyllda.
+              </p>
+              {roster.length > 0 && (
+                <div className="mb-2 space-y-1.5">
+                  {roster.map((r, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <input value={r.name} onChange={(e) => setRoster(roster.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} placeholder="Namn" className="field min-w-0 flex-1" />
+                      <input value={r.number} onChange={(e) => setRoster(roster.map((x, j) => j === i ? { ...x, number: e.target.value } : x))} placeholder="Nr" className="field w-14" />
+                      <select value={r.size} onChange={(e) => setRoster(roster.map((x, j) => j === i ? { ...x, size: e.target.value } : x))} className="field w-20">
+                        {garment.sizes.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <button onClick={() => setRoster(roster.filter((_, j) => j !== i))} className="flex-none text-muted hover:text-bad">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={() => setRoster([...roster, { name: "", number: "", size: midSize() }])} className="btn btn-outline btn-sm flex-1">+ Lägg till person</button>
+                {roster.length > 0 && <button onClick={() => setRoster([])} className="btn btn-ghost btn-sm">Rensa lag</button>}
+              </div>
+              {teamMode && <p className="spec mt-1.5 text-[11px] text-signal">{roster.length} personer · en tryckfil genereras per person vid skapande.</p>}
             </section>
 
             {/* Färdig tryckfil */}
@@ -353,7 +428,7 @@ export default function NewOrder() {
             </section>
 
             <button onClick={create} disabled={creating} className="btn btn-primary w-full">
-              {creating ? "Skapar…" : "Skapa order →"}
+              {creating ? (progress || "Skapar…") : teamMode ? `Skapa lagorder (${roster.length}) →` : "Skapa order →"}
             </button>
           </div>
         </aside>
