@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
@@ -26,6 +26,9 @@ import { kr } from "@/lib/format";
 
 type Pay = "kort" | "swish" | "faktura";
 
+// Leveransuppgifter sparas i sessionen så de överlever navigering (t.ex. login).
+const CHECKOUT_FORM_KEY = "snabbtryck.checkout.form.v1";
+
 export default function Kassa() {
   const router = useRouter();
   const { push } = useToast();
@@ -50,6 +53,7 @@ export default function Kassa() {
   });
   const setField = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+  const formRestored = useRef(false);
 
   const [discInput, setDiscInput] = useState("");
   const [discount, setDiscount] = useState<{ code: string; type: string; value: number; min_order: number } | null>(null);
@@ -75,6 +79,29 @@ export default function Kassa() {
     setAddons(c?.addons ?? []);
     setReady(true);
   }, []);
+
+  // Återställ sparade leveransuppgifter (överlever t.ex. en login-omväg).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_FORM_KEY);
+      if (raw) setForm((f) => ({ ...f, ...JSON.parse(raw) }));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Spara leveransuppgifter löpande (hoppa första körningen så tomt inte skrivs).
+  useEffect(() => {
+    if (!formRestored.current) {
+      formRestored.current = true;
+      return;
+    }
+    try {
+      sessionStorage.setItem(CHECKOUT_FORM_KEY, JSON.stringify(form));
+    } catch {
+      /* ignore */
+    }
+  }, [form]);
 
   // Förifyll namn/e-post från profilen när den laddats.
   useEffect(() => {
@@ -140,11 +167,23 @@ export default function Kassa() {
 
   async function placeOrder() {
     if (!cart || placing) return;
-    if (!user) {
-      router.push("/logga-in?next=/kassa");
-      return;
-    }
     setPlacing(true);
+    // Gäst-utcheckning: skapa en anonym session så ordern får en ägare via RLS
+    // (samma insert/läsning som för inloggade — inget konto krävs).
+    if (!user) {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        setPlacing(false);
+        push({
+          kind: "warn",
+          title: "Logga in för att slutföra",
+          msg: "Gäst-utcheckning är inte aktiverad just nu — logga in eller skapa konto.",
+        });
+        router.push("/logga-in?next=/kassa");
+        return;
+      }
+    }
     const lines = [
       {
         garmentId: cart.design.garmentId,
@@ -177,6 +216,7 @@ export default function Kassa() {
         throw new Error(data.error || "Något gick fel.");
       }
       clearCart();
+      try { sessionStorage.removeItem(CHECKOUT_FORM_KEY); } catch { /* ignore */ }
       push({ kind: "success", title: "Order lagd!", msg: data.ref });
       router.push(`/order/${data.id}`);
     } catch (err) {
@@ -205,6 +245,19 @@ export default function Kassa() {
             {step === 0 ? (
               <section className="space-y-5">
                 <h2 className="head text-2xl">Leverans</h2>
+                {!user && !loading && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-line bg-paper-2 px-3 py-2.5">
+                    <p className="spec text-[12px] text-muted">
+                      Du beställer som gäst — inget konto krävs.
+                    </p>
+                    <Link
+                      href="/logga-in?next=/kassa"
+                      className="spec text-[12px] font-medium text-signal underline underline-offset-2"
+                    >
+                      Logga in för orderhistorik
+                    </Link>
+                  </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Förnamn" value={form.firstName} onChange={setField("firstName")} />
                   <Field label="Efternamn" value={form.lastName} onChange={setField("lastName")} />

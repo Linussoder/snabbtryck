@@ -28,10 +28,12 @@ export function CookieBanner() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[200] border-t border-ink-line bg-ink text-paper">
-      <div className="mx-auto flex max-w-[1100px] flex-col items-start gap-3 px-4 py-4 sm:flex-row sm:items-center md:px-8">
-        <p className="flex-1 text-sm text-paper/80">
-          Vi använder nödvändiga cookies för inloggning och grundläggande funktion. Vi spårar dig inte.{" "}
+    // Kompakt kort i nedre vänstra hörnet — täcker inte knappar (t.ex. "Lägg i
+    // varukorg") som förr, när den spände över hela nederkanten.
+    <div className="fixed bottom-4 left-4 right-4 z-[200] sm:right-auto sm:max-w-sm">
+      <div className="flex flex-col items-start gap-2.5 rounded-[12px] border border-ink-line bg-ink px-4 py-3 text-paper shadow-lg sm:flex-row sm:items-center">
+        <p className="flex-1 text-[13px] leading-snug text-paper/80">
+          Vi använder endast nödvändiga cookies för inloggning. Vi spårar dig inte.{" "}
           <Link href="/integritetspolicy" className="text-signal hover:underline">Läs mer</Link>.
         </p>
         <button onClick={accept} className="btn btn-primary btn-sm flex-none">Okej</button>
