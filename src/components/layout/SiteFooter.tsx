@@ -14,7 +14,7 @@ export function SiteFooter() {
               tryckt och skickat inom 48 timmar. Inga uppläggsavgifter, från 1 plagg.
             </p>
             <p className="eyebrow mt-5 text-paper/40">
-              Sveavägen 00 · 113 00 Stockholm
+              Söderstjerna Fastigheter AB · Kvartsgatan 2, 267 35 Bjuv
             </p>
           </div>
 
@@ -47,10 +47,10 @@ export function SiteFooter() {
           <FooterCol
             title="Kontakt"
             links={[
-              ["Så funkar det", "/sa-funkar-det"],
+              ["Kontakt & om oss", "/kontakt"],
               ["Omdömen", "/omdomen"],
-              ["hej@tryck.se", "mailto:hej@tryck.se"],
-              ["08-000 00 00", "tel:080000000"],
+              ["Köpvillkor", "/kopvillkor"],
+              ["hej@snabbtryck.se", "mailto:hej@snabbtryck.se"],
             ]}
           />
         </div>
@@ -58,7 +58,9 @@ export function SiteFooter() {
         <div className="mt-12 flex flex-col gap-3 border-t border-ink-line pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="spec text-paper/40">
             © {new Date().getFullYear()} SNABBTRYCK · DTF-tryck i Sverige ·{" "}
-            <Link href="/integritetspolicy" className="hover:text-signal">Integritetspolicy</Link>
+            <Link href="/kopvillkor" className="hover:text-signal">Köpvillkor</Link> ·{" "}
+            <Link href="/integritetspolicy" className="hover:text-signal">Integritetspolicy</Link> ·{" "}
+            <Link href="/kontakt" className="hover:text-signal">Kontakt</Link>
           </p>
           <div className="flex items-center gap-4 spec text-paper/40">
             <span>SWISH</span>

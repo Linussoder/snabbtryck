@@ -160,6 +160,24 @@ export async function POST(req: Request) {
     });
   }
 
+  // Låg-lager-notis: pinga om någon berörd variant nu ligger på/under tröskeln.
+  if (process.env.NTFY_TOPIC) {
+    try {
+      const ordered = new Set(lines.map((l: { garmentId: string; size: string }) => `${l.garmentId}|${l.size}`));
+      const { data: lowRows } = await supabase.rpc("get_low_stock");
+      const hits = (lowRows ?? []).filter((r: { garment_id: string; size: string }) => ordered.has(`${r.garment_id}|${r.size}`));
+      if (hits.length) {
+        await fetch(`https://ntfy.sh/${process.env.NTFY_TOPIC}`, {
+          method: "POST",
+          headers: { Title: "Lagt lager", Priority: "high", Tags: "warning,package" },
+          body: hits.map((r: { garment_id: string; size: string; qty: number }) => `${r.garment_id} ${r.size}: ${r.qty} kvar`).join("\n"),
+        });
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+
   // Bekräftelsemejl (no-op utan RESEND_API_KEY).
   if (contact?.email) {
     const mail = orderConfirmationEmail({ ref, total, firstName: contact.firstName });

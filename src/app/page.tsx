@@ -6,6 +6,7 @@ import { GarmentImage } from "@/components/ui/GarmentImage";
 import { GARMENTS } from "@/lib/garments";
 import { kr } from "@/lib/format";
 import { HeroStage } from "@/components/home/HeroStage";
+import { SocialProof } from "@/components/home/SocialProof";
 import { serviceLd, faqLd, jsonLdGraph } from "@/lib/seo";
 
 const FAQ: { q: string; a: string }[] = [
@@ -255,41 +256,6 @@ function TeamBanner() {
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------ Social proof */
-function SocialProof() {
-  const quotes = [
-    ["Beställde 24 hoodies till padelklubben. Laddade upp loggan, la till namn — klart på en kvart.", "Elin R.", "Padel Stars"],
-    ["Bäst DPI-varningen. Slapp den vanliga suddiga loggan man brukar få.", "Marcus T.", "Egenföretagare"],
-    ["Priset uppdaterades direkt när jag ändrade antal. Inga överraskningar i kassan.", "Sara L.", "Klassförening"],
-  ];
-  return (
-    <section className="mx-auto max-w-[1400px] px-4 py-16 md:px-8">
-      <SectionHead index="04" title="Tryckt & levererat" sub="Vad kunderna säger." />
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        {quotes.map(([q, name, org]) => (
-          <figure key={name} className="card flex flex-col p-6">
-            <div className="mb-3 text-ink tracking-wide">
-              {"★★★★★".split("").map((s, i) => (
-                <span key={i}>{s}</span>
-              ))}
-            </div>
-            <blockquote className="flex-1 text-[15px] leading-relaxed">“{q}”</blockquote>
-            <figcaption className="mt-4 flex items-center gap-3 border-t border-line pt-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink font-display text-sm text-paper">
-                {name.split(" ").map((w) => w[0]).join("")}
-              </span>
-              <div>
-                <p className="font-display text-sm uppercase leading-none">{name}</p>
-                <p className="spec text-[11px] text-muted">{org}</p>
-              </div>
-            </figcaption>
-          </figure>
-        ))}
       </div>
     </section>
   );
