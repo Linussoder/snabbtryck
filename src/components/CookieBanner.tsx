@@ -34,7 +34,7 @@ export function CookieBanner() {
       <div className="flex flex-col items-start gap-2.5 rounded-[12px] border border-ink-line bg-ink px-4 py-3 text-paper shadow-lg sm:flex-row sm:items-center">
         <p className="flex-1 text-[13px] leading-snug text-paper/80">
           Vi använder endast nödvändiga cookies för inloggning. Vi spårar dig inte.{" "}
-          <Link href="/integritetspolicy" className="text-signal hover:underline">Läs mer</Link>.
+          <Link href="/integritetspolicy" aria-label="Läs mer om cookies i integritetspolicyn" className="text-signal hover:underline">Läs mer om cookies</Link>.
         </p>
         <button onClick={accept} className="btn btn-primary btn-sm flex-none">Okej</button>
       </div>

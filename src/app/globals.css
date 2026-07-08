@@ -35,8 +35,8 @@
   /* Neutrals / borders / muted text */
   --color-line: #e9e7df;
   --color-line-2: #dcdacf;
-  --color-muted: #8b897f;
-  --color-muted-2: #a6a39a;
+  --color-muted: #6b695f; /* WCAG AA (~4.9:1 mot paper) för småtext */
+  --color-muted-2: #83816f;
   --color-ink-soft: #57564f; /* secondary body text on light */
 
   /* Text-on-dark */

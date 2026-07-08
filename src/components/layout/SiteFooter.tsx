@@ -82,7 +82,7 @@ function FooterCol({
 }) {
   return (
     <div>
-      <h4 className="eyebrow text-paper/50 mb-3">{title}</h4>
+      <h2 className="eyebrow text-paper/50 mb-3">{title}</h2>
       <ul className="flex flex-col gap-2">
         {links.map(([label, href]) => (
           <li key={label}>
