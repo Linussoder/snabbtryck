@@ -13,7 +13,7 @@ export function SiteFooter() {
               Designa din egen tröja i webbläsaren. Full färg, varje tryck —
               tryckt och skickat inom 48 timmar. Inga uppläggsavgifter, från 1 plagg.
             </p>
-            <p className="eyebrow mt-5 text-paper/40">
+            <p className="eyebrow mt-5 text-paper/70">
               Söderstjerna Fastigheter AB · Kvartsgatan 2, 267 35 Bjuv
             </p>
           </div>

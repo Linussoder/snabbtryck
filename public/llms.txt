@@ -24,11 +24,15 @@ Snabbtryck låter privatpersoner, lag, föreningar och företag skapa egentryckt
 
 ## Viktiga sidor
 
-- Designverktyget (skapa din design): https://www.snabbtryck.se/designa
-- Lagbeställning (matchtröjor med namn & nummer): https://www.snabbtryck.se/lag
-- Beställ tryck på ark (A4/A3 DTF-transfers): https://www.snabbtryck.se/ark
-- Bulkpriskalkylator (räkna ut volympris): https://www.snabbtryck.se/bulkpris
-- Klubbutiker (för föreningar): https://www.snabbtryck.se/butik
+- [Designverktyget](https://www.snabbtryck.se/designa): skapa din design direkt i webbläsaren.
+- [Lagbeställning](https://www.snabbtryck.se/lag): matchtröjor med namn & nummer.
+- [Beställ tryck på ark](https://www.snabbtryck.se/ark): A4/A3 DTF-transfers att pressa själv.
+- [Bulkpriskalkylator](https://www.snabbtryck.se/bulkpris): räkna ut volympris.
+- [Klubbutiker](https://www.snabbtryck.se/butik): för föreningar.
+- [Så funkar det](https://www.snabbtryck.se/sa-funkar-det): steg för steg.
+- [Köpvillkor](https://www.snabbtryck.se/kopvillkor): villkor, leverans och ångerrätt.
+- [Kontakt & om oss](https://www.snabbtryck.se/kontakt): support och företagsuppgifter.
+- [Integritetspolicy](https://www.snabbtryck.se/integritetspolicy): GDPR och cookies.
 
 ## Vanliga frågor
 
@@ -52,4 +56,6 @@ PNG, SVG och JPG. För skarpt tryck rekommenderas 300 DPI; verktyget varnar auto
 
 ## Kontakt
 
-E-post och telefon finns på webbplatsen. Beställning och design sker på https://www.snabbtryck.se
+- E-post: hej@snabbtryck.se
+- Företag: Söderstjerna Fastigheter AB, org.nr 559242-2629, Kvartsgatan 2, 267 35 Bjuv.
+- Beställning och design sker på [snabbtryck.se](https://www.snabbtryck.se).
