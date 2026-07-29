@@ -279,7 +279,7 @@ export function DesignCanvas({
                       select(null);
                     }}
                     className={`absolute flex items-center justify-center rounded-full bg-ink text-paper leading-none ${
-                      simple ? "-right-3 -top-3 h-7 w-7 text-sm" : "-right-2 -top-2 h-5 w-5 text-xs"
+                      simple ? "-right-4 -top-4 h-7 w-7 text-sm" : "-right-2.5 -top-2.5 h-5 w-5 text-xs"
                     }`}
                     title="Ta bort"
                     aria-label="Ta bort element"

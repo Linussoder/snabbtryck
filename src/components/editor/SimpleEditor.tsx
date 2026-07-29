@@ -77,6 +77,16 @@ export function SimpleEditor({ onAdvanced }: { onAdvanced: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Mall/utkast/sparad design redan laddad → hoppa direkt till designsteget
+  // så man ser det man valde. (Timeout: förälderns laddnings-effekt kör efter
+  // barnets, så innehållet finns först i nästa tick.)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (useEditor.getState().elements.length > 0) setStep(1);
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   function closeIntro() {
     setIntro(false);
     try {
@@ -103,8 +113,9 @@ export function SimpleEditor({ onAdvanced }: { onAdvanced: () => void }) {
           <StepIndicator steps={STEPS} current={step} />
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="spec hidden text-[10px] text-muted md:inline" title="Ditt utkast sparas automatiskt i webbläsaren">
-            Sparas automatiskt ✓
+          <span className="spec whitespace-nowrap text-[10px] text-muted" title="Ditt utkast sparas automatiskt i webbläsaren">
+            <span className="md:hidden">✓ Sparas</span>
+            <span className="hidden md:inline">Sparas automatiskt ✓</span>
           </span>
           {step === 1 && (
             <button

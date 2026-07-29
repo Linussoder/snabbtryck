@@ -4,7 +4,7 @@ import { PageShell, PageHead } from "@/components/layout/PageShell";
 import { abs, faqLd, breadcrumbLd, jsonLdGraph } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Så funkar det – designa och beställ egen tröja | Snabbtryck",
+  title: "Så funkar det – designa och beställ egen tröja",
   description:
     "Så gör du: välj plagg, ladda upp logga eller skriv text, se priset live och beställ. DTF-tryck från 1 plagg, levererat inom 48 timmar. Storleksguide och vanliga frågor.",
   alternates: { canonical: "/sa-funkar-det" },

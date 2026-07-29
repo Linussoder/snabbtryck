@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell, PageHead } from "@/components/layout/PageShell";
 
 export const metadata: Metadata = {
-  title: "Integritetspolicy | Snabbtryck",
+  title: "Integritetspolicy",
   description: "Så samlar Snabbtryck in, använder och skyddar dina personuppgifter enligt GDPR — och dina rättigheter.",
   alternates: { canonical: "/integritetspolicy" },
 };

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEditor, usePrice, usePrintArea } from "@/lib/store";
 import { DISCOUNT_TIERS, nextTier, VAT_RATE } from "@/lib/pricing";
 import { evaluateQuality } from "@/lib/dpi";
-import { kr, num, pct } from "@/lib/format";
+import { kr, krExact, num, pct } from "@/lib/format";
 import { PriceDisplay } from "@/components/ui/PriceDisplay";
 import { useToast } from "@/components/ui/Toast";
 import { shareDesign, setCart } from "@/lib/account";
@@ -202,8 +202,8 @@ export function PricePanel() {
             <p className="spec text-[11px] text-muted">
               {qty} st ·{" "}
               {business
-                ? `moms ${kr(price.vat)} tillkommer`
-                : `varav moms ${kr(price.vat)}`}
+                ? `moms ${krExact(price.vat)} tillkommer`
+                : `varav moms ${krExact(price.vat)}`}
             </p>
           </div>
           <PriceDisplay value={Math.round(shown)} size="lg" />

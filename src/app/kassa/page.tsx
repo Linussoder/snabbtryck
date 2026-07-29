@@ -22,7 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 import { GARMENTS, getGarment } from "@/lib/garments";
 import { computePrice } from "@/lib/pricing";
 import { computePrintArea, uid } from "@/lib/store";
-import { kr } from "@/lib/format";
+import { kr, krExact } from "@/lib/format";
 
 type Pay = "kort" | "swish" | "faktura";
 
@@ -422,8 +422,8 @@ export default function Kassa() {
                 <Sum label={business ? "Delsumma exkl. moms" : "Delsumma"} value={kr(itemsSum)} />
                 <Sum label="Frakt" value={shipping === 0 ? "Fri" : kr(shipping)} />
                 {discountAmount > 0 && discount && <Sum label={`Rabatt (${discount.code})`} value={`−${kr(discountAmount)}`} />}
-                {!business && <Sum label="varav moms" value={kr(vatSum)} muted />}
-                {business && <Sum label="Moms tillkommer (25%)" value={kr(vatSum)} muted />}
+                {!business && <Sum label="varav moms" value={krExact(vatSum)} muted />}
+                {business && <Sum label="Moms tillkommer (25%)" value={krExact(vatSum)} muted />}
               </div>
               <div className="flex items-center justify-between border-t border-line bg-paper-2 p-4">
                 <span className="head">Att betala</span>

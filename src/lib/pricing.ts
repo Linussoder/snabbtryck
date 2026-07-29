@@ -44,10 +44,12 @@ export function computePrice(
 ): PriceBreakdown {
   const base = garment.basePrice;
   const rawPrint = printAreaCm2 * cfg.pricePerCm2;
-  const printCost = printAreaCm2 > 0 ? Math.max(rawPrint, cfg.printSetupMin) : 0;
-  const unitBeforeDiscount = base + printCost;
+  // Styckpriser rundas till hela kronor i motorn (inte bara i displayen) så
+  // att visat pris/st × antal alltid stämmer exakt med det som debiteras.
+  const printCost = printAreaCm2 > 0 ? Math.round(Math.max(rawPrint, cfg.printSetupMin)) : 0;
+  const unitBeforeDiscount = Math.round(base + printCost);
   const tier = tierForQty(qty, cfg.discountTiers);
-  const unitAfterDiscount = unitBeforeDiscount * (1 - tier.pct);
+  const unitAfterDiscount = Math.round(unitBeforeDiscount * (1 - tier.pct));
   const subtotalInclVat = unitAfterDiscount * qty;
   const subtotalExclVat = subtotalInclVat / (1 + cfg.vatRate);
   const vat = subtotalInclVat - subtotalExclVat;

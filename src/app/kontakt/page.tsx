@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell, PageHead } from "@/components/layout/PageShell";
 
 export const metadata: Metadata = {
-  title: "Kontakt & om oss | Snabbtryck",
+  title: "Kontakt & om oss",
   description: "Kontakta Snabbtryck — DTF-tryck av egna kläder i Sverige. Företagsuppgifter och support.",
   alternates: { canonical: "/kontakt" },
 };

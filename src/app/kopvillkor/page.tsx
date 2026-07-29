@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell, PageHead } from "@/components/layout/PageShell";
 
 export const metadata: Metadata = {
-  title: "Köpvillkor | Snabbtryck",
+  title: "Köpvillkor",
   description: "Villkor för beställning, betalning, leverans, reklamation och ångerrätt hos Snabbtryck.",
   alternates: { canonical: "/kopvillkor" },
 };

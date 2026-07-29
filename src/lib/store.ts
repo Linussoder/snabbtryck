@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { Garment, getGarment, ViewKey } from "./garments";
 import { computePrice, PriceBreakdown } from "./pricing";
 import { computePrintArea } from "./print";
+import { clampToArea, maxWidthInArea } from "./placements";
 import { useSettings } from "@/components/settings/SettingsProvider";
 import { withOverride } from "./settings";
 
@@ -237,8 +238,20 @@ export const useEditor = create<EditorState>((set, get) => {
 
     setGarment: (id) => {
       const g = getGarment(id);
+      // Håll trycken inom nya plaggets tryckytor — annars kan ett byte lämna
+      // element utanför det tryckbara tills de rörs manuellt.
+      const elements = get().elements.map((el) => {
+        if (el.locked) return el;
+        const area = g.areas.find((a) => a.key === el.view);
+        if (!area) return el;
+        const w = Math.min(el.w, maxWidthInArea(area, el.ar));
+        const p = clampToArea(el.x, el.y, w, el.ar, area);
+        if (w === el.w && p.x === el.x && p.y === el.y) return el;
+        return { ...el, w, x: p.x, y: p.y };
+      });
       set({
         garmentId: id,
+        elements,
         colorIndex: 0,
         size: g.sizes.includes(get().size) ? get().size : g.sizes[0],
         view: g.views.includes(get().view) ? get().view : g.views[0],

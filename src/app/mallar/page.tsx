@@ -5,7 +5,7 @@ import { TEMPLATES, getTemplate } from "@/lib/templates";
 import { getGarment } from "@/lib/garments";
 
 export const metadata = {
-  title: "Designmallar — kom igång snabbt | Snabbtryck",
+  title: "Designmallar — kom igång snabbt",
   description:
     "Färdiga tryckmallar för lag, fest, företag och roliga tröjor. Välj en mall, gör den till din och beställ — inga uppläggsavgifter.",
 };
