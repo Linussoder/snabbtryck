@@ -18,11 +18,15 @@ import { PlacementTool } from "./PlacementTool";
 import { LayerPanel } from "./LayerPanel";
 import { PricePanel } from "./PricePanel";
 import { SaveReminder } from "./SaveReminder";
+import { SimpleEditor } from "./SimpleEditor";
 
 type Tab = "plagg" | "bild" | "text" | "placering" | "lager";
+type EditorMode = "simple" | "advanced";
 
 // Autosparat utkast — så designen inte försvinner vid omladdning/navigering.
 const DRAFT_KEY = "snabbtryck.draft.v1";
+// Senast valt läge (enkelt är standard för nya besökare).
+const MODE_KEY = "snabbtryck.editorMode";
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "plagg", label: "Plagg", icon: "▧" },
@@ -51,6 +55,7 @@ export function EditorShell() {
   const params = useSearchParams();
   const [tab, setTab] = useState<Tab>("plagg");
   const [sheet, setSheet] = useState<Tab | "pris" | null>(null);
+  const [mode, setMode] = useState<EditorMode>("simple");
   const setGarment = useEditor((s) => s.setGarment);
   const loadSnapshot = useEditor((s) => s.loadSnapshot);
   const undo = useEditor((s) => s.undo);
@@ -58,6 +63,36 @@ export function EditorShell() {
   const clearAll = useEditor((s) => s.clearAll);
   const view = useEditor((s) => s.view);
   const price = usePrice();
+
+  function switchMode(m: EditorMode) {
+    setMode(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+      /* ignorera */
+    }
+  }
+
+  // Återställ senast valda läge. Designer med tryck på fler vyer än framsidan
+  // öppnas alltid i avancerat läge (enkelt läge visar bara framsidan).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(MODE_KEY) === "advanced") setMode("advanced");
+    } catch {
+      /* ignorera */
+    }
+  }, []);
+  useEffect(() => {
+    const unsub = useEditor.subscribe((s) => {
+      if (s.elements.some((e) => e.view !== "front")) {
+        setMode("advanced");
+        unsub();
+      }
+    });
+    // kolla direkt också (utkast kan redan vara laddat)
+    if (useEditor.getState().elements.some((e) => e.view !== "front")) setMode("advanced");
+    return unsub;
+  }, []);
 
   useEffect(() => {
     const designId = params.get("design");
@@ -149,6 +184,17 @@ export function EditorShell() {
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
+  if (mode === "simple") {
+    return (
+      <div className="flex h-[calc(100dvh-68px)] flex-col overflow-hidden bg-paper">
+        {/* Google Fonts för kundtext (hoistas av React) */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href={GOOGLE_FONTS_HREF} />
+        <SimpleEditor onAdvanced={() => switchMode("advanced")} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100dvh-68px)] flex-col overflow-hidden bg-paper">
       {/* Google Fonts för kundtext (hoistas av React) */}
@@ -158,6 +204,13 @@ export function EditorShell() {
       {/* Editor tool-bar (huvudmenyn ligger ovanför via SiteHeader) */}
       <header className="flex h-12 flex-none items-center gap-3 border-b border-line px-3 md:px-5">
         <span className="eyebrow text-ink">Designverktyg</span>
+        <button
+          onClick={() => switchMode("simple")}
+          className="btn btn-ghost btn-sm"
+          title="Tillbaka till det guidade enkla läget"
+        >
+          ‹ Enkelt läge
+        </button>
         <div className="ml-auto flex items-center gap-1">
           <button onClick={undo} className="btn btn-ghost btn-sm" title="Ångra">↺</button>
           <button onClick={redo} className="btn btn-ghost btn-sm" title="Gör om">↻</button>

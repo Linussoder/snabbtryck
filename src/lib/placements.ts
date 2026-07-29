@@ -142,6 +142,36 @@ export function placementSpec(p: Placement, area: PrintArea): string {
   return `${round1(wcm)} cm`;
 }
 
+/**
+ * Håller ett elements centrum inom tryckytan (med snap till mittlinjerna).
+ * Används av enkelt läge så att trycket inte kan hamna utanför det tryckbara.
+ */
+export function clampToArea(
+  x: number,
+  y: number,
+  w: number,
+  ar: number,
+  area: PrintArea
+): { x: number; y: number } {
+  const hf = w * ar; // höjd-andel (kvadratisk canvas)
+  const minX = area.x + w / 2;
+  const maxX = area.x + area.w - w / 2;
+  const minY = area.y + hf / 2;
+  const maxY = area.y + area.h - hf / 2;
+  const cx = area.x + area.w / 2;
+  const cy = area.y + area.h / 2;
+  let nx = minX > maxX ? cx : clamp(x, minX, maxX);
+  let ny = minY > maxY ? cy : clamp(y, minY, maxY);
+  if (Math.abs(nx - cx) < 0.012) nx = cx;
+  if (Math.abs(ny - cy) < 0.012) ny = cy;
+  return { x: nx, y: ny };
+}
+
+/** Största tillåtna elementbredd (andel) som får plats i tryckytan. */
+export function maxWidthInArea(area: PrintArea, ar: number): number {
+  return Math.max(0.04, Math.min(area.w, ar > 0 ? area.h / ar : area.w));
+}
+
 /** True om elementet redan sitter ungefär på placeringen. */
 export function isPlacementActive(
   p: Placement,

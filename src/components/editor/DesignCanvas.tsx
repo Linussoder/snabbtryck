@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, PointerEvent as RPointerEvent } from "reac
 import { useEditor, DesignElement } from "@/lib/store";
 import { ElementVisual } from "./ElementVisual";
 import { GarmentImage } from "@/components/ui/GarmentImage";
+import { clampToArea, maxWidthInArea } from "@/lib/placements";
 import { evaluateQuality } from "@/lib/dpi";
 import { cm } from "@/lib/format";
 import type { GarmentShape as Shape, ViewKey } from "@/lib/garments";
@@ -22,6 +23,7 @@ interface DragState {
   ox: number;
   oy: number;
   ow: number;
+  ar: number;
   orot: number;
   cxpx: number;
   cypx: number;
@@ -29,7 +31,14 @@ interface DragState {
   startAngle: number;
 }
 
-export function DesignCanvas({ interactive = true }: { interactive?: boolean }) {
+export function DesignCanvas({
+  interactive = true,
+  simple = false,
+}: {
+  interactive?: boolean;
+  /** Enkelt läge: håll element inom tryckytan, snap till mitten, dölj rotation. */
+  simple?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const drag = useRef<DragState | null>(null);
@@ -85,6 +94,7 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
       ox: el.x,
       oy: el.y,
       ow: el.w,
+      ar: el.ar,
       orot: el.rotation,
       cxpx,
       cypx,
@@ -101,10 +111,20 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
     if (d.mode === "move") {
       const dx = (e.clientX - d.startX) / d.W;
       const dy = (e.clientY - d.startY) / d.H;
-      updateEl(d.id, { x: clamp(d.ox + dx, 0.02, 0.98), y: clamp(d.oy + dy, 0.02, 0.98) });
+      let x = clamp(d.ox + dx, 0.02, 0.98);
+      let y = clamp(d.oy + dy, 0.02, 0.98);
+      if (simple && areas[0]) ({ x, y } = clampToArea(x, y, d.ow, d.ar, areas[0]));
+      updateEl(d.id, { x, y });
     } else if (d.mode === "scale") {
       const dist = Math.hypot(e.clientX - d.cxpx, e.clientY - d.cypx);
-      updateEl(d.id, { w: clamp((d.ow * dist) / d.startDist, 0.04, 1.1) });
+      let w = clamp((d.ow * dist) / d.startDist, 0.04, 1.1);
+      if (simple && areas[0]) {
+        w = Math.min(w, maxWidthInArea(areas[0], d.ar));
+        const p = clampToArea(d.ox, d.oy, w, d.ar, areas[0]);
+        updateEl(d.id, { w, x: p.x, y: p.y });
+        return;
+      }
+      updateEl(d.id, { w });
     } else if (d.mode === "rotate") {
       const ang = (Math.atan2(e.clientY - d.cypx, e.clientX - d.cxpx) * 180) / Math.PI;
       let rot = d.orot + (ang - d.startAngle);
@@ -227,23 +247,29 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
               {selected && interactive && !el.locked && (
                 <>
                   <div className="pointer-events-none absolute -inset-1 border border-signal" />
-                  {/* rotate */}
-                  <div
-                    className="absolute left-1/2 -top-7 h-6 w-px -translate-x-1/2 bg-signal"
-                    aria-hidden
-                  />
-                  <button
-                    onPointerDown={(e) => startDrag(e, el.id, "rotate", el)}
-                    className="absolute left-1/2 -top-9 h-4 w-4 -translate-x-1/2 cursor-grab rounded-full border-2 border-signal bg-paper"
-                    title="Rotera"
-                    aria-label="Rotera"
-                  />
+                  {/* rotate (döljs i enkelt läge) */}
+                  {!simple && (
+                    <>
+                      <div
+                        className="absolute left-1/2 -top-7 h-6 w-px -translate-x-1/2 bg-signal"
+                        aria-hidden
+                      />
+                      <button
+                        onPointerDown={(e) => startDrag(e, el.id, "rotate", el)}
+                        className="absolute left-1/2 -top-9 h-4 w-4 -translate-x-1/2 cursor-grab rounded-full border-2 border-signal bg-paper"
+                        title="Rotera"
+                        aria-label="Rotera"
+                      />
+                    </>
+                  )}
                   {/* scale */}
                   <button
                     onPointerDown={(e) => startDrag(e, el.id, "scale", el)}
-                    className="absolute -bottom-2 -right-2 h-4 w-4 cursor-nwse-resize border-2 border-signal bg-paper"
-                    title="Skala"
-                    aria-label="Skala"
+                    className={`absolute cursor-nwse-resize border-2 border-signal bg-paper ${
+                      simple ? "-bottom-3 -right-3 h-6 w-6 rounded-[3px]" : "-bottom-2 -right-2 h-4 w-4"
+                    }`}
+                    title="Ändra storlek"
+                    aria-label="Ändra storlek"
                   />
                   {/* delete */}
                   <button
@@ -252,7 +278,9 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
                       removeEl(el.id);
                       select(null);
                     }}
-                    className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-paper text-xs leading-none"
+                    className={`absolute flex items-center justify-center rounded-full bg-ink text-paper leading-none ${
+                      simple ? "-right-3 -top-3 h-7 w-7 text-sm" : "-right-2 -top-2 h-5 w-5 text-xs"
+                    }`}
                     title="Ta bort"
                     aria-label="Ta bort element"
                   >
@@ -272,9 +300,9 @@ export function DesignCanvas({ interactive = true }: { interactive?: boolean }) 
       </div>
 
       {/* selected image DPI badge */}
-      <SelectedDpiBadge sizeW={size.w} />
+      <SelectedDpiBadge sizeW={size.w} simple={simple} />
 
-      {viewEls.length === 0 && interactive && (
+      {viewEls.length === 0 && interactive && !simple && (
         <div className="pointer-events-none absolute inset-x-0 bottom-6 text-center">
           <p className="spec text-muted">
             Tomt på {view === "front" ? "framsidan" : view === "back" ? "baksidan" : "ärmen"} — lägg
@@ -318,7 +346,7 @@ function RegCorner({ className }: { className: string }) {
   );
 }
 
-function SelectedDpiBadge({ sizeW }: { sizeW: number }) {
+function SelectedDpiBadge({ sizeW, simple }: { sizeW: number; simple?: boolean }) {
   const sel = useEditor((s) => s.selected());
   const garment = useEditor((s) => s.garment());
   if (!sel || sel.type !== "image" || !sizeW) return null;
@@ -331,15 +359,21 @@ function SelectedDpiBadge({ sizeW }: { sizeW: number }) {
       : q.level === "warn"
       ? "var(--color-warn)"
       : "var(--color-bad)";
+  // Klarspråk i enkelt läge — DPI-siffror i avancerat.
+  const label = simple
+    ? q.level === "good"
+      ? "Skarp bild ✓"
+      : q.level === "warn"
+      ? "Lite mjuk — gör gärna mindre"
+      : "Suddig — gör bilden mindre"
+    : `${Math.round(q.dpi)} DPI · ${cm(wcm)}`;
   return (
     <div
       className="absolute left-3 top-3 flex items-center gap-2 rounded-[3px] border bg-paper/90 px-2.5 py-1.5 backdrop-blur"
       style={{ borderColor: cfg }}
     >
       <span className="h-2.5 w-2.5 rounded-full" style={{ background: cfg }} />
-      <span className="spec text-[11px]">
-        {Math.round(q.dpi)} DPI · {cm(wcm)}
-      </span>
+      <span className="spec text-[11px]">{label}</span>
     </div>
   );
 }
