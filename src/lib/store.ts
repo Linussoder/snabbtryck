@@ -31,7 +31,6 @@ export interface ImageEl extends BaseEl {
   naturalW: number;
   naturalH: number;
   bgRemoved: boolean;
-  aiGenerated?: boolean;
 }
 
 export interface TextEl extends BaseEl {
@@ -108,7 +107,7 @@ interface EditorState {
   setQty: (n: number) => void;
   setView: (v: ViewKey) => void;
   select: (id: string | null) => void;
-  addImage: (src: string, naturalW: number, naturalH: number, ai?: boolean) => void;
+  addImage: (src: string, naturalW: number, naturalH: number) => void;
   addText: (text?: string) => void;
   addEmoji: (char: string) => void;
   updateEl: (id: string, patch: Partial<DesignElement>) => void;
@@ -251,7 +250,7 @@ export const useEditor = create<EditorState>((set, get) => {
     setView: (v) => set({ view: v, selectedId: null }),
     select: (id) => set({ selectedId: id }),
 
-    addImage: (src, naturalW, naturalH, ai) => {
+    addImage: (src, naturalW, naturalH) => {
       const id = uid("img");
       const ar = naturalH / naturalW;
       commit((els) => [
@@ -269,7 +268,6 @@ export const useEditor = create<EditorState>((set, get) => {
           naturalW,
           naturalH,
           bgRemoved: false,
-          aiGenerated: ai,
         } as ImageEl,
       ]);
       set({ selectedId: id });

@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { useEditor } from "@/lib/store";
 import { removeBackground } from "@/lib/bgremove";
-import { generateDesign } from "@/lib/aigen";
 import { useToast } from "@/components/ui/Toast";
 
 export function ImageTool() {
@@ -14,8 +13,6 @@ export function ImageTool() {
   const { push } = useToast();
 
   const [drag, setDrag] = useState(false);
-  const [prompt, setPrompt] = useState("");
-  const [genLoad, setGenLoad] = useState(false);
   const [bgLoad, setBgLoad] = useState(false);
   const [preview, setPreview] = useState<{ id: string; before: string; after: string } | null>(null);
 
@@ -57,19 +54,6 @@ export function ImageTool() {
     updateEl(preview.id, { src: preview.after, bgRemoved: true });
     setPreview(null);
     push({ kind: "success", title: "Bakgrund borttagen" });
-  }
-
-  async function generate() {
-    if (!prompt.trim()) return;
-    setGenLoad(true);
-    try {
-      const res = await generateDesign(prompt);
-      addImage(res.dataUrl, res.naturalW, res.naturalH, true);
-      push({ kind: "success", title: "Grafik genererad", msg: "Demo — koppla en bildmodell för skarpa resultat." });
-      setPrompt("");
-    } finally {
-      setGenLoad(false);
-    }
   }
 
   return (
@@ -118,25 +102,6 @@ export function ImageTool() {
             Markera en uppladdad bild på plagget för att ta bort dess bakgrund.
           </p>
         )}
-      </section>
-
-      {/* AI generator */}
-      <section className="rounded-[3px] border border-line bg-paper-2 p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full bg-ink px-2 py-0.5 spec text-[9px] text-paper">AI</span>
-          <h3 className="font-display text-sm uppercase">Ingen bild? Beskriv din idé</h3>
-        </div>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="t.ex. padel-lag, retro solnedgång, aggressiv tiger"
-          rows={2}
-          className="field mb-2 resize-none text-sm"
-        />
-        <button onClick={generate} disabled={genLoad || !prompt.trim()} className="btn btn-primary btn-sm w-full">
-          {genLoad ? "Genererar…" : "Generera grafik"}
-        </button>
-        <p className="spec mt-2 text-[9px] text-muted">Demo-generator · byts mot bildmodell</p>
       </section>
 
       {/* Before/after modal */}

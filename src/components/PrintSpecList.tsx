@@ -9,7 +9,7 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 function elName(el: DesignSnapshot["elements"][number]): string {
   if (el.type === "text") return `Text “${el.text.split("\n")[0] || ""}”`;
   if (el.type === "emoji") return `Emoji ${el.char}`;
-  return el.aiGenerated ? "AI-grafik" : "Logga / bild";
+  return "Logga / bild";
 }
 
 /**

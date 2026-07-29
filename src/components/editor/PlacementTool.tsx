@@ -141,7 +141,7 @@ export function PlacementTool() {
 function elLabel(el: DesignElement): string {
   if (el.type === "text") return `text “${el.text.split("\n")[0] || ""}”`;
   if (el.type === "emoji") return `emoji ${el.char}`;
-  return el.aiGenerated ? "AI-grafik" : "bild";
+  return "bild";
 }
 
 /**

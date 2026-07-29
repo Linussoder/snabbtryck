@@ -12,7 +12,7 @@ const ICON: Record<DesignElement["type"], string> = {
 function label(el: DesignElement): string {
   if (el.type === "text") return el.text.split("\n")[0] || "Text";
   if (el.type === "emoji") return el.char;
-  return el.aiGenerated ? "AI-grafik" : "Bild";
+  return "Bild";
 }
 
 export function LayerPanel() {
