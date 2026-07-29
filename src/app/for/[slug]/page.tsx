@@ -6,7 +6,8 @@ import { GarmentImage } from "@/components/ui/GarmentImage";
 import { ChevronMark } from "@/components/ui/ChevronMark";
 import { getGarment } from "@/lib/garments";
 import { LANDINGS, getLanding } from "@/lib/landings";
-import { abs, breadcrumbLd, faqLd, serviceLd, jsonLdGraph } from "@/lib/seo";
+import { PRINT_SETUP_MIN } from "@/lib/pricing";
+import { abs, breadcrumbLd, faqLd, productLd, serviceLd, jsonLdGraph } from "@/lib/seo";
 
 export function generateStaticParams() {
   return LANDINGS.map((l) => ({ slug: l.slug }));
@@ -29,6 +30,7 @@ export default async function LandingPage({ params }: { params: Promise<{ slug: 
   const l = getLanding(slug);
   if (!l) notFound();
 
+  const focus = l.garmentFocus ? getGarment(l.garmentFocus) : null;
   const ld = jsonLdGraph([
     breadcrumbLd([
       { name: "Hem", path: "/" },
@@ -36,6 +38,17 @@ export default async function LandingPage({ params }: { params: Promise<{ slug: 
     ]),
     faqLd(l.faq),
     serviceLd(),
+    ...(focus
+      ? [
+          productLd({
+            name: `${focus.name} med eget tryck`,
+            description: l.metaDescription,
+            path: `/for/${l.slug}`,
+            fromPrice: focus.basePrice + PRINT_SETUP_MIN,
+            colors: focus.colors.map((c) => c.name),
+          }),
+        ]
+      : []),
   ]);
 
   return (
@@ -78,7 +91,7 @@ export default async function LandingPage({ params }: { params: Promise<{ slug: 
               return (
                 <Link key={gid} href={`/designa?garment=${gid}`} className="card crop-frame overflow-hidden">
                   <div className="aspect-square bg-white">
-                    <GarmentImage shape={g.shape} view="front" color={g.colors[0].hex} dark={g.colors[0].dark} alt={g.name} />
+                    <GarmentImage shape={g.shape} view="front" color={g.colors[0].hex} dark={g.colors[0].dark} alt={`${g.name} i ${g.colors[0].name.toLowerCase()} med eget tryck — designa själv från ${g.basePrice} kr`} />
                   </div>
                   <div className="border-t border-line px-3 py-2">
                     <p className="head text-sm">{g.name}</p>

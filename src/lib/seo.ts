@@ -18,6 +18,9 @@ export function abs(path = "/"): string {
   return new URL(path, SITE.url).toString();
 }
 
+/** Metadata-robots för privata sidor som aldrig ska indexeras. */
+export const NOINDEX = { index: false, follow: false } as const;
+
 type Json = Record<string, unknown>;
 
 export function organizationLd(): Json {
@@ -96,6 +99,77 @@ export function faqLd(qa: { q: string; a: string }[]): Json {
       name: q,
       acceptedAnswer: { "@type": "Answer", text: a },
     })),
+  };
+}
+
+/** Steg-för-steg-schema (t.ex. "Så funkar det"). */
+export function howToLd(opts: {
+  name: string;
+  description: string;
+  path: string;
+  steps: { name: string; text: string }[];
+}): Json {
+  return {
+    "@type": "HowTo",
+    name: opts.name,
+    description: opts.description,
+    url: abs(opts.path),
+    step: opts.steps.map((s, i) => ({
+      "@type": "HowToStep",
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+    })),
+  };
+}
+
+/** Produkt-schema för en plaggtyp med "från"-pris. */
+export function productLd(opts: {
+  name: string;
+  description: string;
+  path: string;
+  fromPrice: number;
+  colors?: string[];
+}): Json {
+  return {
+    "@type": "Product",
+    name: opts.name,
+    description: opts.description,
+    url: abs(opts.path),
+    image: abs("/opengraph-image"),
+    brand: { "@id": `${SITE.url}/#organization` },
+    ...(opts.colors?.length ? { color: opts.colors.join(", ") } : {}),
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "SEK",
+      lowPrice: String(opts.fromPrice),
+      offerCount: "1",
+      availability: "https://schema.org/InStock",
+      seller: { "@id": `${SITE.url}/#organization` },
+    },
+  };
+}
+
+/** Artikel-schema för guider. */
+export function articleLd(opts: {
+  headline: string;
+  description: string;
+  path: string;
+  datePublished: string; // YYYY-MM-DD
+  dateModified?: string;
+}): Json {
+  return {
+    "@type": "Article",
+    headline: opts.headline,
+    description: opts.description,
+    url: abs(opts.path),
+    mainEntityOfPage: abs(opts.path),
+    image: abs("/opengraph-image"),
+    inLanguage: "sv-SE",
+    datePublished: opts.datePublished,
+    dateModified: opts.dateModified ?? opts.datePublished,
+    author: { "@id": `${SITE.url}/#organization` },
+    publisher: { "@id": `${SITE.url}/#organization` },
   };
 }
 

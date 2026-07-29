@@ -181,7 +181,7 @@ function Categories() {
                 view="front"
                 color={g.colors[0].hex}
                 dark={g.colors[0].dark}
-                alt={g.name}
+                alt={`${g.name} med eget tryck — designa själv, från ${g.basePrice} kr`}
                 className="transition-transform duration-300 group-hover:scale-[1.04]"
               />
             </div>

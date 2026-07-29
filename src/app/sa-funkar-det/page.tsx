@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageShell, PageHead } from "@/components/layout/PageShell";
-import { abs, faqLd, breadcrumbLd, jsonLdGraph } from "@/lib/seo";
+import { abs, faqLd, breadcrumbLd, howToLd, jsonLdGraph } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Så funkar det – designa och beställ egen tröja",
@@ -37,6 +37,13 @@ const FAQ = [
 export default function SaFunkarDet() {
   const ld = jsonLdGraph([
     breadcrumbLd([{ name: "Hem", path: "/" }, { name: "Så funkar det", path: "/sa-funkar-det" }]),
+    howToLd({
+      name: "Designa och beställ egen tröja med DTF-tryck",
+      description:
+        "Så designar och beställer du ett plagg med eget tryck hos Snabbtryck — från idé till levererat plagg på fyra steg.",
+      path: "/sa-funkar-det",
+      steps: STEPS.map((s) => ({ name: s.t, text: s.d })),
+    }),
     faqLd(FAQ),
   ]);
   return (

@@ -30,9 +30,31 @@ Snabbtryck låter privatpersoner, lag, föreningar och företag skapa egentryckt
 - [Bulkpriskalkylator](https://www.snabbtryck.se/bulkpris): räkna ut volympris.
 - [Klubbutiker](https://www.snabbtryck.se/butik): för föreningar.
 - [Så funkar det](https://www.snabbtryck.se/sa-funkar-det): steg för steg.
+- [Färdiga mallar](https://www.snabbtryck.se/mallar): designmallar för lag, fest, företag.
+- [Omdömen](https://www.snabbtryck.se/omdomen): kundrecensioner.
 - [Köpvillkor](https://www.snabbtryck.se/kopvillkor): villkor, leverans och ångerrätt.
 - [Kontakt & om oss](https://www.snabbtryck.se/kontakt): support och företagsuppgifter.
 - [Integritetspolicy](https://www.snabbtryck.se/integritetspolicy): GDPR och cookies.
+
+## Plagg och användningsområden
+
+- [T-shirt med eget tryck](https://www.snabbtryck.se/for/tshirt-med-eget-tryck): från 169 kr med tryck (t-shirt 149 kr + tryck från 20 kr).
+- [Hoodie med eget tryck](https://www.snabbtryck.se/for/hoodie-med-eget-tryck): från 419 kr med tryck.
+- [Keps med eget tryck](https://www.snabbtryck.se/for/keps-med-eget-tryck): från 149 kr med tryck.
+- [Föreningströjor](https://www.snabbtryck.se/for/foreningstrojor): lagkläder med namn och nummer.
+- [Företagskläder](https://www.snabbtryck.se/for/foretagsklader): profilkläder med logga, fakturabetalning.
+- [Arbetskläder med tryck](https://www.snabbtryck.se/for/arbetsklader-med-tryck): fyll på från 1 plagg.
+- [Eventkläder](https://www.snabbtryck.se/for/eventklader): svensexa, möhippa, kickoff.
+- [Studentkläder](https://www.snabbtryck.se/for/studentklader): studenttröjor för klassen.
+- [Padelkläder](https://www.snabbtryck.se/for/padelklader): teamkläder för padelbanan.
+
+## Guider
+
+- [Vad kostar det att trycka tröjor?](https://www.snabbtryck.se/guider/vad-kostar-det-att-trycka-trojor): komplett prisguide med formeln plagg + 0,23 kr/cm², plaggpriser och mängdrabatter.
+- [DTF-tryck vs screentryck vs vinyl](https://www.snabbtryck.se/guider/dtf-tryck-vs-screentryck): jämförelse av tryckmetoder och när varje passar bäst.
+- [Så tvättar du tryckta kläder](https://www.snabbtryck.se/guider/tvatta-tryckta-klader): skötselråd — max 40 °C, ut och in, ingen torktumlare.
+- [Bästa filformatet för tryck](https://www.snabbtryck.se/guider/basta-filformatet-for-tryck): PNG/SVG/JPG, transparent bakgrund och 300 DPI.
+- [Trycka tröjor till laget](https://www.snabbtryck.se/guider/trycka-trojor-till-laget): steg för steg för lag och föreningar, med volympriser.
 
 ## Vanliga frågor
 

@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="panel-ink on-ink relative overflow-hidden">
       <div className="halftone halftone-signal absolute inset-x-0 top-0 h-24 opacity-20" />
       <div className="relative mx-auto max-w-[1400px] px-4 md:px-8 py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr]">
           <div>
             <Logo variant="dark" size={22} />
             <p className="mt-4 max-w-xs text-sm text-paper/75 leading-relaxed">
@@ -30,10 +30,26 @@ export function SiteFooter() {
           <FooterCol
             title="Använd till"
             links={[
+              ["T-shirt med eget tryck", "/for/tshirt-med-eget-tryck"],
+              ["Hoodie med eget tryck", "/for/hoodie-med-eget-tryck"],
+              ["Keps med eget tryck", "/for/keps-med-eget-tryck"],
               ["Föreningströjor", "/for/foreningstrojor"],
               ["Företagskläder", "/for/foretagsklader"],
+              ["Arbetskläder", "/for/arbetsklader-med-tryck"],
               ["Eventkläder", "/for/eventklader"],
               ["Studentkläder", "/for/studentklader"],
+              ["Padelkläder", "/for/padelklader"],
+            ]}
+          />
+          <FooterCol
+            title="Guider"
+            links={[
+              ["Vad kostar tryck?", "/guider/vad-kostar-det-att-trycka-trojor"],
+              ["DTF vs screentryck", "/guider/dtf-tryck-vs-screentryck"],
+              ["Tvätta tryckta kläder", "/guider/tvatta-tryckta-klader"],
+              ["Rätt filformat", "/guider/basta-filformatet-for-tryck"],
+              ["Tröjor till laget", "/guider/trycka-trojor-till-laget"],
+              ["Alla guider", "/guider"],
             ]}
           />
           <FooterCol

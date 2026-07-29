@@ -6,11 +6,15 @@ const PRIVATE = [
   "/api",
   "/auth",
   "/kassa",
+  "/konto",
   "/mina-skapelser",
   "/logga-in",
   "/aterstall-losenord",
+  "/avprenumerera",
   "/order",
   "/delad",
+  "/lag/samla",
+  "/lag/hantera",
 ];
 
 // AI-/svarsmotor-crawlers (GEO) — uttryckligen tillåtna så att Snabbtryck kan
