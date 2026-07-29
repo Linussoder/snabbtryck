@@ -134,14 +134,14 @@ export function SimpleEditor({ onAdvanced }: { onAdvanced: () => void }) {
       </div>
 
       {/* botten: pris + nästa steg */}
-      <footer className="flex flex-none items-center gap-3 border-t border-line bg-paper px-3 py-3 md:px-6">
+      <footer className="flex flex-none items-center gap-2 border-t border-line bg-paper px-3 py-3 md:gap-3 md:px-6">
         {step > 0 && (
-          <button onClick={() => setStep(step - 1)} className="btn btn-ghost">
-            ← Tillbaka
+          <button onClick={() => setStep(step - 1)} className="btn btn-ghost" aria-label="Tillbaka">
+            ←<span className="hidden sm:inline"> Tillbaka</span>
           </button>
         )}
-        <div className="ml-auto flex items-center gap-4">
-          <div className="text-right">
+        <div className="ml-auto flex items-center gap-3 md:gap-4">
+          <div className="flex-none whitespace-nowrap text-right">
             <p className="eyebrow leading-none">{business ? "Totalt exkl. moms" : "Totalt"}</p>
             <PriceDisplay
               value={Math.round(business ? price.subtotalExclVat : price.subtotalInclVat)}
@@ -308,6 +308,11 @@ function StepDesign() {
   function addFittedText() {
     addText("DIN TEXT");
     fitNewElement();
+    // Startfärg som alltid syns: vit på mörka plagg, mörk på ljusa.
+    const s = useEditor.getState();
+    const el = s.selected();
+    const gc = s.garment().colors[s.colorIndex] ?? s.garment().colors[0];
+    if (el?.type === "text") s.updateEl(el.id, { color: gc.dark ? "#ffffff" : "#111114" });
   }
 
   function handleFiles(files: FileList | null) {
@@ -396,10 +401,22 @@ function StepDesign() {
 }
 
 function SelectedPanel({ el }: { el: DesignElement }) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const garment = useEditor((s) => s.garment());
   const updateEl = useEditor((s) => s.updateEl);
   const removeEl = useEditor((s) => s.removeEl);
   const select = useEditor((s) => s.select);
+
+  // Mobil: panelen ligger under canvasen — scrolla fram den när ett element
+  // markeras, annars ser man inte att kontrollerna dykt upp.
+  useEffect(() => {
+    const n = panelRef.current;
+    if (!n) return;
+    const r = n.getBoundingClientRect();
+    if (r.top > window.innerHeight - 140) {
+      n.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [el.id]);
 
   const area = garment.areas.find((a) => a.key === "front");
   const maxW = area ? maxWidthInArea(area, el.ar) : 1;
@@ -422,7 +439,7 @@ function SelectedPanel({ el }: { el: DesignElement }) {
   }
 
   return (
-    <div className="space-y-5 rounded-[10px] border border-line bg-paper p-4">
+    <div ref={panelRef} className="space-y-5 rounded-[10px] border border-line bg-paper p-4">
       {el.type === "text" && <SimpleTextControls el={el} />}
       {el.type === "image" && <SimpleImageControls el={el} />}
 
