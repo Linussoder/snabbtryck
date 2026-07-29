@@ -173,16 +173,8 @@ export function EditorShell() {
     };
   }, []);
 
-  // Varna innan sidan lämnas/laddas om med osparad design ("glöm inte spara").
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (useEditor.getState().elements.length === 0) return;
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, []);
+  // Ingen "lämna sidan?"-varning: utkastet autosparas i localStorage, så
+  // dialogen skrämde bara i onödan och blockerade navigering.
 
   if (mode === "simple") {
     return (

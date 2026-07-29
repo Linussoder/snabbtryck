@@ -87,7 +87,7 @@ function Hero() {
       <div className="relative mx-auto grid max-w-[1400px] items-center gap-10 px-4 py-14 md:px-8 md:py-20 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="rise">
           <div className="mb-5 flex items-center gap-2">
-            <span className="eyebrow text-cyan">
+            <span className="eyebrow text-cyan-text">
               DTF-tryck · Design i webbläsaren · Sverige
             </span>
           </div>
@@ -135,7 +135,7 @@ function Marquee() {
     "LADDA UPP LOGGA",
     "AI TAR BORT BAKGRUNDEN",
     "BÖJD TEXT",
-    "FULLT EMOJI-BIBLIOTEK",
+    "FÄRDIGA MALLAR",
     "PRIS I REALTID",
     "NAMN & NUMMER",
     "MÄNGDRABATT",
@@ -287,7 +287,7 @@ function SectionHead({ index, title, sub }: { index: string; title: string; sub:
   return (
     <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
       <div>
-        <span className="eyebrow text-cyan">{index} · SNABBTRYCK</span>
+        <span className="eyebrow text-cyan-text">{index} · SNABBTRYCK</span>
         <h2 className="head mt-2 text-3xl sm:text-[2.6rem]">{title}</h2>
       </div>
       <p className="max-w-xs text-sm text-muted">{sub}</p>

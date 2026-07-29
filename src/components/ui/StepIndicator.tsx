@@ -18,7 +18,7 @@ export function StepIndicator({
               <span
                 className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-display font-semibold border ${
                   active
-                    ? "bg-signal text-white border-signal"
+                    ? "bg-signal text-ink border-signal"
                     : done
                     ? "bg-ink text-paper border-ink"
                     : "bg-transparent text-ink/70 border-line"

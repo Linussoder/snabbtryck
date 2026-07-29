@@ -35,12 +35,16 @@ export interface PriceBreakdown {
 /**
  * @param printAreaCm2 total tryckyta i cm² för ETT plagg (summa av alla element)
  * @param cfg prissättningskonfiguration (default = kod-defaults; DB-config skickas in där den finns)
+ * @param tierQty antal som styr mängdrabatten (default = qty). Används när en
+ *   order delas i flera rader av samma plagg (t.ex. lag med olika storlekar) —
+ *   rabatten ska räknas på totalen, inte per storleksrad.
  */
 export function computePrice(
   garment: Garment,
   printAreaCm2: number,
   qty: number,
-  cfg: PricingConfig = DEFAULT_PRICING
+  cfg: PricingConfig = DEFAULT_PRICING,
+  tierQty: number = qty
 ): PriceBreakdown {
   const base = garment.basePrice;
   const rawPrint = printAreaCm2 * cfg.pricePerCm2;
@@ -48,7 +52,7 @@ export function computePrice(
   // att visat pris/st × antal alltid stämmer exakt med det som debiteras.
   const printCost = printAreaCm2 > 0 ? Math.round(Math.max(rawPrint, cfg.printSetupMin)) : 0;
   const unitBeforeDiscount = Math.round(base + printCost);
-  const tier = tierForQty(qty, cfg.discountTiers);
+  const tier = tierForQty(tierQty, cfg.discountTiers);
   const unitAfterDiscount = Math.round(unitBeforeDiscount * (1 - tier.pct));
   const subtotalInclVat = unitAfterDiscount * qty;
   const subtotalExclVat = subtotalInclVat / (1 + cfg.vatRate);

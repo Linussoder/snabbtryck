@@ -97,6 +97,8 @@ export interface Cart {
   design: DesignSnapshot;
   qty: number;
   addons?: CartAddon[];
+  /** Storleksfördelning (t.ex. lagbeställning) — ger en orderrad per storlek. */
+  sizes?: { size: string; qty: number }[];
 }
 export function setCart(cart: Cart) {
   write(CART_KEY, cart);

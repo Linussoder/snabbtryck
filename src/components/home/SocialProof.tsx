@@ -18,7 +18,7 @@ export function SocialProof() {
     <section className="mx-auto max-w-[1400px] px-4 py-16 md:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
         <div>
-          <span className="eyebrow text-cyan">04 · SNABBTRYCK</span>
+          <span className="eyebrow text-cyan-text">04 · SNABBTRYCK</span>
           <h2 className="head mt-2 text-3xl sm:text-[2.6rem]">Tryckt & levererat</h2>
         </div>
         <p className="max-w-xs text-sm text-muted">Vad kunderna säger.</p>

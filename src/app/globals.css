@@ -24,6 +24,7 @@
   --color-yellow: #ffda00; /* PRIMARY accent + CTA fill (text on it = ink) */
   --color-yellow-ink: #111114;
   --color-cyan: #00aeef; /* SECONDARY accent — links, details, active dots */
+  --color-cyan-text: #00719b; /* cyan för SMÅTEXT på ljus bakgrund (WCAG AA ≥4.5:1) */
   --color-magenta: #ec008c; /* TERTIARY — process graphics only */
 
   /* `signal` = the site-wide detail accent → cyan, so every legacy
@@ -139,14 +140,18 @@ body {
   -webkit-box-decoration-break: clone;
 }
 
-/* Technical eyebrow / spec label — Space Mono, tracked out */
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-muted);
+/* Technical eyebrow / spec label — Space Mono, tracked out.
+   Ligger i components-lagret så text-*-utilities kan åsidosätta färgen
+   (olagrad CSS vinner annars över Tailwinds utilities → kontrastbuggar). */
+@layer components {
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
 }
 
 .spec {

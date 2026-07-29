@@ -73,12 +73,21 @@ export async function POST(req: Request) {
     }
   }
 
+  // Mängdrabatt räknas på totalantalet per plagg (en lagorder kan vara
+  // uppdelad i en rad per storlek — rabatten ska ändå gälla hela laget).
+  const qtyPerGarment: Record<string, number> = {};
+  for (const line of lines) {
+    const q = Math.max(1, Math.round(line.qty || 1));
+    qtyPerGarment[line.garmentId] = (qtyPerGarment[line.garmentId] ?? 0) + q;
+  }
+
   let itemsSum = 0;
   let inclVatSum = 0;
   for (const line of lines) {
     const g = withOverride(getGarment(line.garmentId), products);
     const area = computePrintArea(design.elements, g);
-    const p = computePrice(g, area, Math.max(1, Math.round(line.qty || 1)), pricing);
+    const q = Math.max(1, Math.round(line.qty || 1));
+    const p = computePrice(g, area, q, pricing, qtyPerGarment[line.garmentId]);
     itemsSum += business ? p.subtotalExclVat : p.subtotalInclVat;
     inclVatSum += p.subtotalInclVat;
   }

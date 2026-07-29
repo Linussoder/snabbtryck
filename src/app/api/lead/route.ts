@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Lead från bulkpris-kalkylatorn → sparas i Supabase (anon insert-policy).
-// Syns i admin under Leads.
+// Lead från bulkpris-kalkylatorn och ark-förfrågningar → sparas i Supabase
+// (anon insert-policy). Syns i admin under Leads.
 export async function POST(req: Request) {
   const lead = await req.json().catch(() => null);
   if (!lead?.email) {
     return NextResponse.json({ ok: false, error: "saknar email" }, { status: 400 });
+  }
+
+  // Spec-payload (t.ex. arkets motivlista) — storleksbegränsad.
+  let payload: unknown = null;
+  if (lead.payload != null) {
+    try {
+      const s = JSON.stringify(lead.payload);
+      if (s.length <= 100_000) payload = JSON.parse(s);
+    } catch {
+      /* ogiltig payload ignoreras */
+    }
   }
 
   const supabase = await createClient();
@@ -15,6 +26,7 @@ export async function POST(req: Request) {
     garment_id: lead.garmentId ?? null,
     qty: typeof lead.qty === "number" ? lead.qty : null,
     estimate: typeof lead.estimate === "number" ? Math.round(lead.estimate) : null,
+    payload,
   });
 
   if (error) {

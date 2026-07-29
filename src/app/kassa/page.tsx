@@ -24,7 +24,7 @@ import { computePrice } from "@/lib/pricing";
 import { computePrintArea, uid } from "@/lib/store";
 import { kr, krExact } from "@/lib/format";
 
-type Pay = "kort" | "swish" | "faktura";
+type Pay = "kort" | "swish" | "faktura" | "offert";
 
 // Leveransuppgifter sparas i sessionen så de överlever navigering (t.ex. login).
 const CHECKOUT_FORM_KEY = "snabbtryck.checkout.form.v1";
@@ -52,9 +52,41 @@ export default function Kassa() {
     company: "",
     note: "",
   });
-  const setField = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const setField = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [k]: e.target.value }));
+    setErrors((er) => {
+      if (!(k in er)) return er;
+      const next = { ...er };
+      delete next[k];
+      return next;
+    });
+  };
   const formRestored = useRef(false);
+
+  // Fältvisa fel istället för en flyktig toast — markerar, förklarar och
+  // scrollar till första felet så man ser varför det inte går vidare.
+  function validateDelivery(): boolean {
+    const e: Record<string, string> = {};
+    if (!form.firstName.trim()) e.firstName = "Fyll i förnamn";
+    if (!form.lastName.trim()) e.lastName = "Fyll i efternamn";
+    if (!form.email.trim()) e.email = "Fyll i e-post";
+    else if (!/^\S+@\S+\.\S+$/.test(form.email.trim()))
+      e.email = "Det ser inte ut som en giltig e-postadress";
+    if (!form.address.trim()) e.address = "Fyll i adress";
+    if (!form.zip.trim()) e.zip = "Fyll i postnummer";
+    if (!form.city.trim()) e.city = "Fyll i ort";
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      requestAnimationFrame(() => {
+        document
+          .querySelector("[data-field-error]")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return false;
+    }
+    return true;
+  }
 
   const [discInput, setDiscInput] = useState("");
   const [discount, setDiscount] = useState<{ code: string; type: string; value: number; min_order: number } | null>(null);
@@ -185,13 +217,24 @@ export default function Kassa() {
         return;
       }
     }
+    // Storleksfördelning (lagbeställning) → en rad per storlek, annars en rad.
+    const mainLines = cart.sizes?.length
+      ? cart.sizes.map((s) => ({
+          garmentId: cart.design.garmentId,
+          colorIndex: cart.design.colorIndex,
+          size: s.size,
+          qty: s.qty,
+        }))
+      : [
+          {
+            garmentId: cart.design.garmentId,
+            colorIndex: cart.design.colorIndex,
+            size: cart.design.size,
+            qty: cart.qty,
+          },
+        ];
     const lines = [
-      {
-        garmentId: cart.design.garmentId,
-        colorIndex: cart.design.colorIndex,
-        size: cart.design.size,
-        qty: cart.qty,
-      },
+      ...mainLines,
       ...addons.map((a) => ({
         garmentId: a.garmentId,
         colorIndex: a.colorIndex,
@@ -260,12 +303,12 @@ export default function Kassa() {
                   </div>
                 )}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Förnamn" value={form.firstName} onChange={setField("firstName")} />
-                  <Field label="Efternamn" value={form.lastName} onChange={setField("lastName")} />
-                  <Field label="E-post" type="email" full value={form.email} onChange={setField("email")} />
-                  <Field label="Adress" full value={form.address} onChange={setField("address")} />
-                  <Field label="Postnummer" value={form.zip} onChange={setField("zip")} />
-                  <Field label="Ort" value={form.city} onChange={setField("city")} />
+                  <Field label="Förnamn" value={form.firstName} onChange={setField("firstName")} error={errors.firstName} />
+                  <Field label="Efternamn" value={form.lastName} onChange={setField("lastName")} error={errors.lastName} />
+                  <Field label="E-post" type="email" full value={form.email} onChange={setField("email")} error={errors.email} />
+                  <Field label="Adress" full value={form.address} onChange={setField("address")} error={errors.address} />
+                  <Field label="Postnummer" value={form.zip} onChange={setField("zip")} error={errors.zip} />
+                  <Field label="Ort" value={form.city} onChange={setField("city")} error={errors.city} />
                   {business && (
                     <Field label="Företag / org.nr" full value={form.company} onChange={setField("company")} />
                   )}
@@ -298,10 +341,7 @@ export default function Kassa() {
                 </div>
                 <button
                   onClick={() => {
-                    if (!form.firstName || !form.email || !form.address || !form.zip || !form.city) {
-                      push({ kind: "error", title: "Fyll i leveransuppgifterna", msg: "Namn, e-post, adress, postnr och ort krävs." });
-                      return;
-                    }
+                    if (!validateDelivery()) return;
                     setStep(1);
                   }}
                   className="btn btn-primary"
@@ -314,7 +354,10 @@ export default function Kassa() {
                 <button onClick={() => setStep(0)} className="spec text-muted hover:text-ink">← Tillbaka till leverans</button>
                 <h2 className="head text-2xl">Betalning</h2>
                 <div className="space-y-2">
-                  {(business ? (["faktura", "kort", "swish"] as Pay[]) : (["swish", "kort"] as Pay[])).map((p) => (
+                  {(business
+                    ? (["faktura", "kort", "swish", "offert"] as Pay[])
+                    : (["swish", "kort", "offert"] as Pay[])
+                  ).map((p) => (
                     <button
                       key={p}
                       onClick={() => setPay(p)}
@@ -324,9 +367,16 @@ export default function Kassa() {
                     >
                       <span className={`h-4 w-4 flex-none rounded-full border-2 ${pay === p ? "border-yellow bg-yellow" : "border-line-2"}`} />
                       <span className="head text-sm">
-                        {p === "kort" ? "Kort" : p === "swish" ? "Swish" : "Faktura (30 dagar)"}
+                        {p === "kort"
+                          ? "Kort"
+                          : p === "swish"
+                          ? "Swish"
+                          : p === "faktura"
+                          ? "Faktura (30 dagar)"
+                          : "Skicka som förfrågan — betala senare"}
                       </span>
                       {p === "faktura" && <span className="spec ml-auto text-[10px] text-cyan">Endast företag</span>}
+                      {p === "offert" && <span className="spec ml-auto text-[10px] text-cyan">Ingen betalning nu</span>}
                     </button>
                   ))}
                 </div>
@@ -347,11 +397,24 @@ export default function Kassa() {
                 {pay === "faktura" && (
                   <p className="card p-4 text-sm text-muted">Faktura skickas till angiven e-post/adress med 30 dagars betalningsvillkor.</p>
                 )}
+                {pay === "offert" && (
+                  <p className="card p-4 text-sm text-muted">
+                    Vi tar emot din design och hör av oss via mejl med bekräftelse.
+                    Du betalar först när allt är klart — på plats vid upphämtning,
+                    med Swish eller via faktura. Inget trycks innan du sagt ja.
+                  </p>
+                )}
 
                 <button onClick={placeOrder} disabled={placing} className="btn btn-primary w-full">
-                  {placing ? "Lägger order…" : `Betala ${kr(grand)} →`}
+                  {placing
+                    ? "Skickar…"
+                    : pay === "offert"
+                    ? "Skicka förfrågan →"
+                    : `Betala ${kr(grand)} →`}
                 </button>
-                <p className="spec text-[10px] text-muted">Demo-kassa — ingen riktig betalning genomförs.</p>
+                {pay !== "offert" && (
+                  <p className="spec text-[10px] text-muted">Demo-kassa — ingen riktig betalning genomförs.</p>
+                )}
               </section>
             )}
 
@@ -506,6 +569,7 @@ function Field({
   placeholder,
   value,
   onChange,
+  error,
 }: {
   label: string;
   type?: string;
@@ -513,11 +577,21 @@ function Field({
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
 }) {
   return (
-    <label className={`block ${full ? "sm:col-span-2" : ""}`}>
+    <label className={`block ${full ? "sm:col-span-2" : ""}`} data-field-error={error ? "" : undefined}>
       <span className="eyebrow mb-1 block">{label}</span>
-      <input type={type} placeholder={placeholder} className="field" value={value} onChange={onChange} />
+      <input
+        type={type}
+        placeholder={placeholder}
+        className="field"
+        style={error ? { borderColor: "var(--color-bad)" } : undefined}
+        aria-invalid={error ? true : undefined}
+        value={value}
+        onChange={onChange}
+      />
+      {error && <span className="mt-1 block text-[12px] text-bad">⚠ {error}</span>}
     </label>
   );
 }

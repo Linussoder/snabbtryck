@@ -10,6 +10,8 @@ import { DesignSnapshot, DesignElement, computePrintArea, uid } from "@/lib/stor
 import { GARMENTS, getGarment } from "@/lib/garments";
 import { computePrice, nextTier } from "@/lib/pricing";
 import { setCart } from "@/lib/account";
+import { clampToArea } from "@/lib/placements";
+import { textAspect } from "@/lib/text";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { kr, num, pct } from "@/lib/format";
 
@@ -18,11 +20,26 @@ interface Row {
   name: string;
   number: string;
   size: string;
+  /** Per-tröja finjustering: vertikal förskjutning av hela trycket (andel av canvasen). */
+  dy?: number;
+  /** Per-tröja skala på sifferhöjden (1 = laginställningen). */
+  numScale?: number;
 }
 
 const SIZES = ["S", "M", "L", "XL", "2XL"];
 
-function baseText(view: "back", text: string, y: number, w: number, color: string): DesignElement {
+// Samma nyckel som kassan använder för att återställa formuläret — laglistan
+// förifylls som ordermeddelande så tryckeriet får namn/nummer/storlek per tröja.
+const CHECKOUT_FORM_KEY = "snabbtryck.checkout.form.v1";
+
+function baseText(
+  view: "back",
+  text: string,
+  y: number,
+  w: number,
+  ar: number,
+  color: string
+): DesignElement {
   return {
     id: uid("txt"),
     type: "text",
@@ -30,7 +47,7 @@ function baseText(view: "back", text: string, y: number, w: number, color: strin
     x: 0.5,
     y,
     w,
-    ar: 0.3,
+    ar,
     rotation: 0,
     text,
     font: "Anton",
@@ -54,8 +71,15 @@ export function LagClient() {
   ]);
   const [paste, setPaste] = useState("");
 
+  // Laginställningar: bokstavshöjd i cm (samma för ALLA namn — långa namn blir
+  // automatiskt smalare/kondenserade, precis som på riktiga matchtröjor).
+  const [nameHcm, setNameHcm] = useState(7);
+  const [numHcm, setNumHcm] = useState(18);
+  const [numTop, setNumTop] = useState(false); // nummer över namnet
+
   const garment = getGarment(garmentId);
   const color = garment.colors[colorIndex] ?? garment.colors[0];
+  const backArea = garment.areas.find((a) => a.key === "back");
   const { profile } = useAuth();
   const business = profile?.business ?? false;
 
@@ -75,9 +99,34 @@ export function LagClient() {
 
   const rowSnapshot = (r: Row): DesignSnapshot => {
     const textColor = color.dark ? "#ffffff" : "#111114";
+    const ref = garment.printRefWidthCm;
+    const maxWf = backArea?.w ?? 0.36;
+    const dy = r.dy ?? 0;
+
+    // Fast bokstavshöjd → bredden följer namnlängden (kapas mot tryckytan,
+    // då kondenseras bokstäverna istället för att bli högre/lägre).
+    const mk = (text: string, centerY: number, hcm: number): DesignElement => {
+      const ar = textAspect(text, 1);
+      const hf = hcm / ref;
+      const w = Math.min(ar > 0 ? hf / ar : maxWf, maxWf);
+      const el = baseText("back", text, centerY, w, ar, textColor);
+      if (backArea) {
+        const p = clampToArea(el.x, el.y + dy, w, ar, backArea);
+        el.x = p.x;
+        el.y = p.y;
+      }
+      return el;
+    };
+
+    const numH = numHcm * (r.numScale ?? 1);
     const els: DesignElement[] = [];
-    if (r.number) els.push(baseText("back", r.number, 0.42, 0.42, textColor));
-    if (r.name) els.push(baseText("back", r.name, 0.2, 0.5, textColor));
+    if (numTop) {
+      if (r.number) els.push(mk(r.number, 0.27, numH));
+      if (r.name) els.push(mk(r.name, 0.47, nameHcm));
+    } else {
+      if (r.name) els.push(mk(r.name, 0.22, nameHcm));
+      if (r.number) els.push(mk(r.number, 0.4, numH));
+    }
     return { ...base, size: r.size, elements: els };
   };
 
@@ -114,7 +163,33 @@ export function LagClient() {
     }
   }
   function checkout() {
-    setCart({ design: { ...base, name: `Lagtryck ${garment.name}` }, qty });
+    // Ordern bär första spelarens tryck som representativ design (pris/mockup)
+    // + hela laglistan som ordermeddelande och storlekarna som radfördelning.
+    const first = rows[0] ?? { id: "", name: "", number: "", size: "L" };
+    const design = {
+      ...rowSnapshot(first),
+      name: `Lagtryck ${garment.name} × ${qty}`,
+    };
+    const sizeMap = new Map<string, number>();
+    rows.forEach((r) => sizeMap.set(r.size, (sizeMap.get(r.size) ?? 0) + 1));
+    const sizes = [...sizeMap.entries()].map(([size, n]) => ({ size, qty: n }));
+
+    const roster = rows
+      .map((r) => `${r.name || "—"} #${r.number || "—"} (${r.size})`)
+      .join("\n");
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_FORM_KEY);
+      const prev = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      const note = `LAGLISTA (${qty} spelare, ${nameHcm} cm namn / ${numHcm} cm nummer):\n${roster}`;
+      sessionStorage.setItem(
+        CHECKOUT_FORM_KEY,
+        JSON.stringify({ ...prev, note: prev.note ? `${note}\n\n${prev.note}` : note })
+      );
+    } catch {
+      /* sessionStorage otillgängligt — laglistan följer ändå med i design/lines */
+    }
+
+    setCart({ design, qty, sizes });
     router.push("/kassa");
   }
 
@@ -155,6 +230,62 @@ export function LagClient() {
                 ))}
               </div>
             </div>
+          </section>
+
+          {/* tryckinställningar */}
+          <section className="card p-5">
+            <h2 className="eyebrow mb-3">Tryckinställningar</h2>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="block">
+                <span className="flex items-center justify-between spec text-[11px] text-muted">
+                  <span>Bokstavshöjd namn</span>
+                  <span>{nameHcm} cm</span>
+                </span>
+                <input
+                  type="range"
+                  min={4}
+                  max={10}
+                  step={0.5}
+                  value={nameHcm}
+                  onChange={(e) => setNameHcm(Number(e.target.value))}
+                  className="brand mt-1 w-full"
+                />
+              </label>
+              <label className="block">
+                <span className="flex items-center justify-between spec text-[11px] text-muted">
+                  <span>Sifferhöjd</span>
+                  <span>{numHcm} cm</span>
+                </span>
+                <input
+                  type="range"
+                  min={10}
+                  max={24}
+                  step={1}
+                  value={numHcm}
+                  onChange={(e) => setNumHcm(Number(e.target.value))}
+                  className="brand mt-1 w-full"
+                />
+              </label>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="spec text-[11px] text-muted">Ordning:</span>
+              {[false, true].map((v) => (
+                <button
+                  key={String(v)}
+                  onClick={() => setNumTop(v)}
+                  className={`rounded-[3px] border px-2.5 py-1.5 font-display text-[11px] uppercase transition-colors ${
+                    numTop === v ? "border-signal bg-signal/10" : "border-line hover:border-ink"
+                  }`}
+                >
+                  {v ? "Nummer överst" : "Namn överst"}
+                </button>
+              ))}
+            </div>
+            <p className="spec mt-3 text-[10px] text-muted">
+              Alla namn trycks med samma bokstavshöjd — längre namn blir automatiskt
+              smalare, precis som på riktiga matchtröjor. Finjustera enskilda tröjor
+              under förhandsgranskningen.
+            </p>
           </section>
 
           {/* roster */}
@@ -206,6 +337,49 @@ export function LagClient() {
                     <p className="spec text-[10px] text-paper/60">
                       <span className="font-display text-cyan">#{r.number || "–"}</span> · {r.size}
                     </p>
+                  </div>
+                  {/* per-tröja finjustering */}
+                  <div className="flex items-center justify-center gap-1 border-t border-line bg-paper py-1">
+                    <button
+                      onClick={() => update(r.id, { dy: (r.dy ?? 0) - 0.02 })}
+                      className="btn btn-ghost btn-sm px-2"
+                      title="Flytta trycket uppåt"
+                      aria-label="Flytta trycket uppåt"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => update(r.id, { dy: (r.dy ?? 0) + 0.02 })}
+                      className="btn btn-ghost btn-sm px-2"
+                      title="Flytta trycket nedåt"
+                      aria-label="Flytta trycket nedåt"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => update(r.id, { numScale: Math.max(0.6, (r.numScale ?? 1) - 0.1) })}
+                      className="btn btn-ghost btn-sm px-2 spec text-[11px]"
+                      title="Mindre siffra på denna tröja"
+                    >
+                      #−
+                    </button>
+                    <button
+                      onClick={() => update(r.id, { numScale: Math.min(1.4, (r.numScale ?? 1) + 0.1) })}
+                      className="btn btn-ghost btn-sm px-2 spec text-[11px]"
+                      title="Större siffra på denna tröja"
+                    >
+                      #+
+                    </button>
+                    {(r.dy || (r.numScale && r.numScale !== 1)) ? (
+                      <button
+                        onClick={() => update(r.id, { dy: 0, numScale: 1 })}
+                        className="btn btn-ghost btn-sm px-2"
+                        title="Återställ justeringar"
+                        aria-label="Återställ justeringar"
+                      >
+                        ↺
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))}

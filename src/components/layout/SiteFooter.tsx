@@ -63,7 +63,7 @@ export function SiteFooter() {
             <Link href="/integritetspolicy" className="hover:text-signal">Integritetspolicy</Link> ·{" "}
             <Link href="/kontakt" className="hover:text-signal">Kontakt</Link>
           </p>
-          <div className="flex items-center gap-4 spec text-paper/40">
+          <div className="flex items-center gap-4 spec text-paper/65">
             <span>SWISH</span>
             <span>KORT</span>
             <span>FAKTURA</span>

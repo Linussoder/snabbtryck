@@ -72,10 +72,11 @@ export function getPlacements(garment: Garment, view: ViewKey): Placement[] {
     }
   }
 
-  // Accessoarer / underdelar: härled från tryckytan.
+  // Accessoarer / underdelar: härled från tryckytan. Klarspråksetiketter —
+  // "Front litet" lät tekniskt mitt i det enkla flödet.
   return [
-    { id: `${view}-small`, label: `${area.label} litet`, view, widthCm: round1(area.maxWcm * 0.45), anchorX: 0.5, anchorY: 0.5 },
-    { id: `${view}-fill`, label: `${area.label} fyll`, view, widthCm: area.maxWcm, heightCm: area.maxHcm, anchorX: 0.5, anchorY: 0.5 },
+    { id: `${view}-small`, label: "Litet mitt på", view, widthCm: round1(area.maxWcm * 0.45), anchorX: 0.5, anchorY: 0.5 },
+    { id: `${view}-fill`, label: "Fyll ytan", view, widthCm: area.maxWcm, heightCm: area.maxHcm, anchorX: 0.5, anchorY: 0.5 },
   ];
 }
 
