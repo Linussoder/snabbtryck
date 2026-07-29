@@ -57,7 +57,7 @@ export function HeroStage() {
 
           {/* price chip */}
           <div className="absolute bottom-3 right-3 rounded-[12px] border border-ink bg-ink px-3 py-2 text-paper">
-            <span className="eyebrow text-paper/60">Pris / st</span>
+            <span className="eyebrow text-paper/80">Pris / st</span>
             <p className="font-display text-2xl leading-none">149 kr</p>
           </div>
         </div>

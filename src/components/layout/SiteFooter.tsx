@@ -9,11 +9,11 @@ export function SiteFooter() {
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
           <div>
             <Logo variant="dark" size={22} />
-            <p className="mt-4 max-w-xs text-sm text-paper/60 leading-relaxed">
+            <p className="mt-4 max-w-xs text-sm text-paper/75 leading-relaxed">
               Designa din egen tröja i webbläsaren. Full färg, varje tryck —
               tryckt och skickat inom 48 timmar. Inga uppläggsavgifter, från 1 plagg.
             </p>
-            <p className="eyebrow mt-5 text-paper/70">
+            <p className="eyebrow mt-5 text-paper/85">
               Söderstjerna Fastigheter AB · Kvartsgatan 2, 267 35 Bjuv
             </p>
           </div>
@@ -57,7 +57,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-ink-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="spec text-paper/40">
+          <p className="spec text-paper/65">
             © {new Date().getFullYear()} SNABBTRYCK · DTF-tryck i Sverige ·{" "}
             <Link href="/kopvillkor" className="hover:text-signal">Köpvillkor</Link> ·{" "}
             <Link href="/integritetspolicy" className="hover:text-signal">Integritetspolicy</Link> ·{" "}
@@ -83,7 +83,7 @@ function FooterCol({
 }) {
   return (
     <div>
-      <h2 className="eyebrow text-paper/50 mb-3">{title}</h2>
+      <h2 className="eyebrow text-paper/70 mb-3">{title}</h2>
       <ul className="flex flex-col gap-2">
         {links.map(([label, href]) => (
           <li key={label}>

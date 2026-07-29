@@ -199,7 +199,7 @@ function Categories() {
 /* ------------------------------------------------------------ Steps */
 function Steps() {
   const steps: [string, string, string, string][] = [
-    ["Ladda upp", "Släpp in loggan eller bilden — eller beskriv din idé och låt AI:n rita den. Bakgrunden tas bort med ett klick.", "var(--color-cyan)", "PNG · SVG · 300 DPI"],
+    ["Ladda upp", "Släpp in loggan eller bilden — eller skriv din text direkt på plagget. Bakgrunden tas bort med ett klick.", "var(--color-signal-ink)", "PNG · SVG · 300 DPI"],
     ["Placera", "Dra, skala och rotera bild och text på plagget – eller välj en standardplacering som vänster bröst, helsida fram eller över axelbladen. Tryckytorna visas som streckade guider och DPI-kollen håller koll på skärpan.", "var(--color-ink)", "Live-pris per cm²"],
     ["Beställ", "Priset är redan uträknat. Lägg i varukorgen, betala — vi trycker och skickar. Följ status Mottagen → I tryck → Skickad.", "var(--color-ink)", "Tryckt inom 48 h"],
   ];
@@ -266,7 +266,7 @@ function FinalCta() {
   return (
     <section className="border-t border-line bg-yellow text-yellow-ink">
       <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-6 px-4 py-20 text-center md:px-8">
-        <span className="eyebrow text-yellow-ink/70">Från logga till plagg</span>
+        <span className="eyebrow text-yellow-ink">Från logga till plagg</span>
         <h2 className="display text-4xl sm:text-6xl">Din idé. Ditt plagg.</h2>
         <p className="text-lg text-yellow-ink/80 md:whitespace-nowrap">
           Öppna verktyget och ha en tryckfärdig design innan kaffet kallnat.

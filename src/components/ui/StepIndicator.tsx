@@ -21,7 +21,7 @@ export function StepIndicator({
                     ? "bg-signal text-white border-signal"
                     : done
                     ? "bg-ink text-paper border-ink"
-                    : "bg-transparent text-muted border-line"
+                    : "bg-transparent text-ink/70 border-line"
                 }`}
               >
                 {done ? "✓" : String(i + 1).padStart(2, "0")}
