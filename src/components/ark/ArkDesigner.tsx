@@ -481,14 +481,22 @@ export function ArkDesigner() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.item.url} alt="" className="h-full w-full object-contain" />
                           ) : (
-                            <svg viewBox={`0 0 ${p.item.ar * 100} 100`} className="h-full w-full">
+                            <svg
+                              viewBox={`0 0 ${p.item.ar * 100} 100`}
+                              className="h-full w-full"
+                              preserveAspectRatio="none"
+                            >
+                              {/* textLength sträcker glyfferna till exakt boxbredden så
+                                  förhandsvisningen visar samma yta som packningen räknar med */}
                               <text
-                                x="50%"
-                                y="52%"
+                                x={p.item.ar * 50}
+                                y="54%"
                                 textAnchor="middle"
                                 dominantBaseline="middle"
                                 fontFamily="Anton, Oswald, sans-serif"
-                                fontSize={86}
+                                fontSize={92}
+                                textLength={p.item.ar * 100}
+                                lengthAdjust="spacingAndGlyphs"
                                 fill={p.item.color}
                                 stroke={p.item.color === "#FFFFFF" ? "#d0d0d0" : "none"}
                                 strokeWidth={p.item.color === "#FFFFFF" ? 1 : 0}
